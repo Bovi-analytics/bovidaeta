@@ -27,6 +27,7 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
+    - Weaning: the diet of the calf will no longer contain milk
     """
 
     BIRTH = "Birth"
@@ -42,6 +43,42 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+    WEANING = "Weaning"
+
+class WeightObservationMethodType(str, Enum):
+    """
+    Method by which the weight is observed.
+
+    Includes loadcell (loadbars), girth (tape), assessed (visually),
+    walk-over weighing, prediction, imaging (camera/IR),
+    front end weight correlated to whole body, group average.
+
+    Based on ICAR enum:
+    https://github.com/adewg/ICAR/blob/ADE-1/enums/icarWeightMethodType.json
+    """
+
+    LOAD_CELL = "load_cell"
+    GIRTH = "girth"
+    ASSESSED = "assessed"
+    WALK_OVER = "walk_over"
+    PREDICTED = "predicted"
+    IMAGED = "imaged"
+    FRONT_END_CORRELATED = "front_end_correlated"
+    GROUP_AVERAGE = "group_average"
+
+class WeaningMethod(str, Enum):
+    """
+    The protocol that was used to wean the calf. 
+    Abrupt = going from the highest milk consumption straight to zero kg milk per day
+    Gradual = step down approach where the milk consumption is reduced over a couple of days
+    Fenceline = only relevant for cow/calf management systems;
+        the calf is seperated by a barrier from it's mom but there is still contact possible.
+    """
+
+    ABRUPT = 'abrupt'
+    GRADUAL = 'gradual'
+    FENCELINE = 'fence_line'
+    
 
 class AnimalGender(str, Enum):
     """
