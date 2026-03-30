@@ -23,6 +23,7 @@ from .enums import (
     DiagnosticSource,
     DiseaseCode,
     GenderSorting,
+    HerdEntryType,
     ParturitionBirthStatusType,
     RouteOfAdministration,
     TreatmentFrequency,
@@ -34,6 +35,45 @@ class EventDetailModel(BaseModel):
     """Base class representing timeline event metadata."""
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
+
+
+class HerdEntryDetail(EventDetailModel):
+    """
+    Herd entry event metadata.
+
+    Records how and when an animal joined the herd. For animals born on farm,
+    this event coexists with a BIRTH event on the same timeline — the BIRTH
+    event carries biological details (calving ease, birth status) while this
+    event records herd membership.
+    """
+
+    entry_type: HerdEntryType = Field(
+        description=(
+            "The mechanism by which the animal entered the herd "
+            "(born on farm, purchased, transferred, or unknown)."
+        ),
+    )
+    entry_date: date = Field(
+        description=(
+            "Date the animal officially entered the herd, format YYYY-MM-DD. "
+            "For born-on-farm animals this is typically the birth date."
+        ),
+    )
+    age_at_entry: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Age of the animal at the time of herd entry, expressed in days. "
+            "Zero for animals born on farm."
+        ),
+    )
+    source_farm: str | None = Field(
+        default=None,
+        description=(
+            "Name or identifier of the farm or operation from which the animal "
+            "originated. Applies to purchased and transferred animals; free text."
+        ),
+    )
 
 
 class BirthDetail(EventDetailModel):
@@ -501,6 +541,7 @@ class TreatmentDetail(EventDetailModel):
 
 __all__ = [
     "EventDetailModel",
+    "HerdEntryDetail",
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
