@@ -14,13 +14,19 @@ from pydantic import BaseModel, ConfigDict, Field
 from .enums import (
     BreedingType,
     CalvingEaseType,
+    ConfirmationStatus,
     DepartureReason,
     DepartureType,
+    DiagnosisMethod,
+    DiagnosisSeverity,
+    DiagnosisStage,
+    DiagnosticSource,
+    DiseaseCode,
     GenderSorting,
     ParturitionBirthStatusType,
     RouteOfAdministration,
     TreatmentFrequency,
-    TreatmentResponseStatus
+    TreatmentResponseStatus,
 )
 
 
@@ -504,5 +510,5 @@ __all__ = [
     "FeedIntakeDetail",
     "DiseaseDetail",
     "DiagnosisDetail",
-    "TreatmentDetail"
+    "TreatmentDetail",
 ]
