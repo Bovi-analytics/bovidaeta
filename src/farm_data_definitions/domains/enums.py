@@ -323,3 +323,161 @@ class Breed(str, Enum):
     WRI = "WRI"
 
 
+class DiagnosisSeverity(str, Enum):
+    """
+    Clinical severity of a disease diagnosis.
+
+    Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisSeverityType.json
+    """
+
+    LIGHT = "Light"
+    MODERATE = "Moderate"
+    SEVERE = "Severe"
+
+
+class DiagnosisStage(str, Enum):
+    """
+    Stage of disease progression at time of diagnosis.
+
+    Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisStageType.json
+    """
+
+    EARLY = "Early"
+    ACUTE = "Acute"
+    SUB_ACUTE = "SubAcute"
+    CHRONIC = "Chronic"
+    ACUTE_ON_CHRONIC = "AcuteOnChronic"
+    END_STAGE = "EndStage"
+    OTHER = "Other"
+
+
+class DiseaseCode(str, Enum):
+    """
+    Common cattle disease codes used in diagnosis events.
+
+    Covers the ~25 most clinically relevant conditions in dairy and beef herds.
+    Less frequent or unclassified conditions should use OTH with a free-text
+    description in DiseaseDetail.disease_description.
+
+    | Disease                               | Code |
+    | ------------------------------------- | ---- |
+    | Mastitis                              | MAS  |
+    | Ketosis / Acetonaemia                 | KET  |
+    | Milk Fever / Hypocalcaemia            | MFV  |
+    | Left Displaced Abomasum               | LDA  |
+    | Right Displaced Abomasum              | RDA  |
+    | Retained Placenta                     | RTP  |
+    | Metritis                              | MET  |
+    | Endometritis                          | END  |
+    | Ovarian Cyst                          | OVC  |
+    | Digital Dermatitis                    | DDM  |
+    | Foot Rot / Interdigital Phlegmon      | FTR  |
+    | Sole Ulcer                            | SUL  |
+    | White Line Disease                    | WLD  |
+    | Bovine Respiratory Disease            | BRD  |
+    | Bovine Viral Diarrhoea                | BVD  |
+    | Infectious Bovine Rhinotracheitis     | IBR  |
+    | Grass Tetany / Hypomagnesaemia        | MGT  |
+    | Bloat                                 | BLT  |
+    | Ruminal Acidosis                      | RAC  |
+    | Traumatic Reticuloperitonitis         | TRP  |
+    | Diarrhoea / Enteritis                 | DIA  |
+    | Uterine Prolapse                      | UTP  |
+    | Johne's Disease / Paratuberculosis    | JOH  |
+    | Leptospirosis                         | LEP  |
+    | Ringworm                              | RWM  |
+    | Infectious Bovine Keratoconjunctivitis| IBK  |
+    | Other                                 | OTH  |
+    """
+
+    MAS = "MAS"
+    KET = "KET"
+    MFV = "MFV"
+    LDA = "LDA"
+    RDA = "RDA"
+    RTP = "RTP"
+    MET = "MET"
+    END = "END"
+    OVC = "OVC"
+    DDM = "DDM"
+    FTR = "FTR"
+    SUL = "SUL"
+    WLD = "WLD"
+    BRD = "BRD"
+    BVD = "BVD"
+    IBR = "IBR"
+    MGT = "MGT"
+    BLT = "BLT"
+    RAC = "RAC"
+    TRP = "TRP"
+    DIA = "DIA"
+    UTP = "UTP"
+    JOH = "JOH"
+    LEP = "LEP"
+    RWM = "RWM"
+    IBK = "IBK"
+    OTH = "OTH"
+
+
+class DiagnosisMethod(str, Enum):
+    """Method used to identify a disease."""
+
+    CLINICAL = "clinical"
+    LABORATORY = "laboratory"
+    SENSOR_BASED = "sensor_based"
+    POST_MORTEM = "post_mortem"
+    OTHER = "other"
+
+
+class ConfirmationStatus(str, Enum):
+    """Whether the diagnosis is still a suspicion or has been confirmed."""
+
+    SUSPECTED = "suspected"
+    CONFIRMED = "confirmed"
+
+
+class DiagnosticSource(str, Enum):
+    """Who or what made the diagnosis."""
+
+    VETERINARIAN = "veterinarian"
+    FARM_WORKER = "farm_worker"
+    SENSOR = "sensor"
+    LABORATORY = "laboratory"
+    OTHER = "other"
+
+
+class RouteOfAdministration(str, Enum):
+    """
+    Route by which a drug or treatment is administered.
+    """
+
+    INTRAMAMMARY = "intramammary"
+    INTRAVENOUS = "intravenous"
+    INTRAMUSCULAR = "intramuscular"
+    SUBCUTANEOUS = "subcutaneous"
+    ORAL = "oral"
+    INTRAUTERINE = "intrauterine"
+    TOPICAL = "topical"
+    OTHER = "other"
+
+
+class TreatmentFrequency(str, Enum):
+    """How often a drug application is repeated within a treatment course."""
+
+    ONCE = "once"
+    TWICE_DAILY = "twice_daily"
+    DAILY = "daily"
+    EVERY_OTHER_DAY = "every_other_day"
+    WEEKLY = "weekly"
+    OTHER = "other"
+
+
+class TreatmentResponseStatus(str, Enum):
+    """Observed animal response at end of or after a treatment course."""
+
+    IMPROVING = "improving"
+    NO_CHANGE = "no_change"
+    WORSENED = "worsened"
+    RECOVERED = "recovered"
+    DIED = "died"
+
