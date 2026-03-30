@@ -28,6 +28,7 @@ class EventType(str, Enum):
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
     - HerdEntry: Animal enters the herd (born on farm, purchased, or transferred).
+    - HerdMove: Animal is moved from one location to another within the operation.
     """
 
     BIRTH = "Birth"
@@ -44,6 +45,7 @@ class EventType(str, Enum):
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
     HERD_ENTRY = "HerdEntry"
+    HERD_MOVE = "HerdMove"
 
 class AnimalGender(str, Enum):
     """

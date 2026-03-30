@@ -76,6 +76,32 @@ class HerdEntryDetail(EventDetailModel):
     )
 
 
+class HerdMoveDetail(EventDetailModel):
+    """
+    Herd move event metadata.
+
+    Records the movement of an individual animal from one location to another
+    within the same operation (e.g. pen-to-pen, pasture, or farm-to-farm).
+    For group moves, all animals share the same `group_move_id` on their
+    individual timelines.
+    """
+
+    location_from: str = Field(
+        description="Name or identifier of the location the animal is moving from (free text).",
+    )
+    location_to: str = Field(
+        description="Name or identifier of the location the animal is moving to (free text).",
+    )
+    group_move_id: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Optional identifier linking all animals moved together in the same "
+            "group move. Each animal still has its own HERD_MOVE event."
+        ),
+    )
+
+
 class BirthDetail(EventDetailModel):
     """Birth event metadata."""
 
@@ -542,6 +568,7 @@ class TreatmentDetail(EventDetailModel):
 __all__ = [
     "EventDetailModel",
     "HerdEntryDetail",
+    "HerdMoveDetail",
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
