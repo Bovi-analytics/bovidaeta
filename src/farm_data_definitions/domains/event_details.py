@@ -7,17 +7,20 @@ This module describes timeline event metadata parameters that need extra
 definition in the domain model.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import (
+    BodyWeightMeasurementMethod,
     BreedingType,
     CalvingEaseType,
     DepartureReason,
     DepartureType,
     GenderSorting,
     ParturitionBirthStatusType,
+    DiagnosisSampleType,
+    PregnancyCheckMethod,
 )
 
 
@@ -37,6 +40,34 @@ class BirthDetail(EventDetailModel):
     parturition_birth_status_type: ParturitionBirthStatusType | None = Field(
         default=None,
         description="The way this calf was born, based on ICAR enum.",
+    )
+
+
+class BodyWeight(EventDetailModel):
+    """
+    Metadata for a body weight measurement event.
+
+    Used for tracking animal growth, health recovery, or nutritional
+    efficiency independent of milking sessions.
+    """
+
+    body_weight: int | None = Field(
+        default=None,
+        ge=0,
+        description="Body weight of the animal measured, in kg.",
+    )
+    measurement_method: BodyWeightMeasurementMethod | None = Field(
+        default=None,
+        description="The specific method or equipment used to obtain the weight.",
+    )
+    scale_id: int | str | None = Field(
+        default=None,
+        description="Identifier of the specific scale or equipment used for measurement.",
+    )
+    is_estimated: bool = Field(
+        default=False,
+        description="Indicates if the weight was estimated (e.g., by visual score or tape) "
+        "rather than measured by a calibrated scale.",
     )
 
 
@@ -89,6 +120,35 @@ class CalvingDetail(EventDetailModel):
     parturition_birth_status_type: ParturitionBirthStatusType | None = Field(
         default=None,
         description="The way a calf was born, based on ICAR enum.",
+    )
+
+
+class DiagnosisSample(EventDetailModel):
+    """Diagnosis sample collecting event metadata."""
+
+    sample_id: int | str | None = Field(
+        default=None,
+        description="Unique identifier or barcode of the collected sample.",
+    )
+    diagnosis_sample_type: DiagnosisSampleType | None = Field(
+        default=None,
+        description="The biological material collected (e.g., milk, blood, fecal).",
+    )
+    diagnostic_target: str | None = Field(
+        default=None,
+        description="The pathogen or condition being tested for, e.g., 'Mastitis' or 'Ketosis'.",
+    )
+    collection_method: str | None = Field(
+        default=None,
+        description="The tool or process used, e.g., 'Sterile Strip' or 'Vacutainer'.",
+    )
+    technician_id: int | str | None = Field(
+        default=None,
+        description="Identifier of the person (Vet or Farm Staff) who collected the sample.",
+    )
+    is_pooled: bool = Field(
+        default=False,
+        description="True if the sample contains material from multiple cows (e.g. bulk tank or pen pool).",
     )
 
 
@@ -241,7 +301,6 @@ class FeedIntakeDetail(EventDetailModel):
         default=None,
         description="End time of feeding session (format: YYYY-MM-DD HH:MM:SS).",
     )
-    
 
 
 __all__ = [
@@ -254,3 +313,34 @@ __all__ = [
     "MilkMeterYieldsDetail",
     "FeedIntakeDetail",
 ]
+
+
+class PregnancyCheck(EventDetailModel):
+    """Metadata for a pregnancy diagnostic event (Vet Check)."""
+
+    is_pregnant: bool | None = Field(
+        default=None,
+        description="The result of the pregnancy check. True if pregnant, False if open.",
+    )
+    check_method: PregnancyCheckMethod | None = Field(
+        default=None,
+        description="The method used for the check, e.g., 'ultrasound', 'palpation', or 'milk_pag'.",
+    )
+    days_pregnant: int | None = Field(
+        default=None,
+        ge=0,
+        description="Estimated number of days since conception (gestation length).",
+    )
+    estimated_calving_date: date | None = Field(
+        default=None,
+        description="The projected date of birth based on the check results (format: YYYY-MM-DD).",
+    )
+    technician_id: int | str | None = Field(
+        default=None,
+        description="Identifier of the veterinarian or technician performing the check.",
+    )
+    remarks: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Additional notes, e.g., 'Twins detected' or 'Recheck required'.",
+    )

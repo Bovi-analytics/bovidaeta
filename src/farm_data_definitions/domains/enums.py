@@ -8,12 +8,14 @@ type/reason, breed codes, and event types.
 
 from enum import Enum
 
+
 class EventType(str, Enum):
     """
     Predefined and immutable timeline event types.
 
     - Birth: Cow was born.
     - Breeding: Animal shows heat and is inseminated.
+    - BodyWeight: Body weight of the animal is measured.
     - Calving: Cow gives birth to a calf.
     - Exit: Cow was sold to another farm, died, or was culled.
     - DryOff: Animal is no longer milked until she calves.
@@ -31,6 +33,7 @@ class EventType(str, Enum):
 
     BIRTH = "Birth"
     BREEDING = "Breeding"
+    BODY_WEIGHT = "body_weight"
     CALVING = "Calving"
     EXIT = "Exit"
     DRY_OFF = "DryOff"
@@ -42,6 +45,7 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+
 
 class AnimalGender(str, Enum):
     """
@@ -58,6 +62,15 @@ class AnimalGender(str, Enum):
     UNKNOWN = "unknown"
 
 
+class BodyWeightMeasurementMethod(str, Enum):
+    WALK_OVER_SCALE = "walk_over_scale"
+    STATIONARY_SCALE = "stationary_scale"
+    MILKING_ROBOT = "milking_robot"
+    TAPE = "tape"
+    VISUAL_ESTIMATE = "visual_estimate"
+    OTHER = "other"
+
+
 class BreedingType(str, Enum):
     """Breeding type."""
 
@@ -66,6 +79,24 @@ class BreedingType(str, Enum):
     NATURAL_SERVICE = "natural_service"
     WITH_BULL = "with_bull"
     EMBRYO_TRANSFER = "embryo_transfer"
+
+
+class DiagnosisSampleType(str, Enum):
+    """
+    Type of samples that collected for diagnosis purpose.
+    """
+
+    MILK_INDIVIDUAL = "milk_individual"
+    MILK_BULK_TANK = "milk_bulk_tank"
+    BLOOD_SERUM = "blood_serum"
+    BLOOD_WHOLE = "blood_whole"
+    FECAL = "fecal"
+    URINE = "urine"
+    EAR_NOTCH = "ear_notch"
+    HAIR = "hair"
+    SWAB_NASAL = "swab_nasal"
+    SWAB_VAGINAL = "swab_vaginal"
+    TISSUE_NECROPSY = "tissue_necropsy"
 
 
 class GenderSorting(str, Enum):
@@ -323,3 +354,9 @@ class Breed(str, Enum):
     WRI = "WRI"
 
 
+class PregnancyCheckMethod(str, Enum):
+    PALPATION = "palpation"
+    ULTRASOUND = "ultrasound"
+    MILK_PAG = "milk_pag"  # Pregnancy Associated Glycoproteins tested in milk
+    BLOOD_PAG = "blood_pag"  # Pregnancy Associated Glycoproteins tested in blood
+    OTHER = "other"
