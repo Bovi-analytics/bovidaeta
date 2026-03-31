@@ -8,6 +8,7 @@ definition in the domain model.
 """
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -43,10 +44,9 @@ class BirthDetail(EventDetailModel):
 class BreedingDetail(EventDetailModel):
     """Breeding event metadata."""
 
-    bull_identifier: int | None = Field(
+    bull_identifier: UUID | None = Field(
         default=None,
-        gt=0,
-        description="Identifier of the bull used for breeding, unique number within the system.",
+        description="UUID identifier of the bull used for breeding.",
     )
     bull_ear_tag: str | None = Field(
         default=None,

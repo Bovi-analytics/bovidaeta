@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from uuid import UUID
 
-from .cow import Cow
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Herd(BaseModel):
@@ -15,9 +15,8 @@ class Herd(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    herd_identifier: int = Field(
-        gt=0,
-        description="Unique identifier for the herd.",
+    herd_identifier: UUID = Field(
+        description="UUID identifier for the herd.",
     )
     name: str | None = Field(
         default=None,
@@ -102,11 +101,6 @@ class Herd(BaseModel):
         default=None,
         description="Telephone number of the farmer.",
     )
-    cows: list[Cow] = Field(
-         default_factory=list,
-         description="List of all cows that are in the herd.",
-    )
-
     @field_validator("country_code")
     @classmethod
     def normalize_country_code(cls, value: str | None) -> str | None:
