@@ -193,6 +193,60 @@ class MilkMeterYieldsDetail(EventDetailModel):
     )
 
 
+class BodyWeightDetail(EventDetailModel):
+    """
+    Body weight event metadata.
+
+    Represents the body weight of an animal measured during a session.
+    """
+    body_weight: int | None = Field(
+        default=None,
+        ge=0,
+        description="Body weight of the animal measured, in kg.",
+    )
+  
+
+class BodyConditionScoreDetail(EventDetailModel):
+    """
+    Body condition score event metadata.
+
+    Represents the body condition score (BCS) of an animal.
+    """
+
+    body_condition_score: float | None = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="Body condition score (BCS) of the animal on a 1-5 scale.",
+    )
+
+
+class GenomeTestDetail(EventDetailModel):
+    """
+    Genome test event metadata.
+
+    Represents a genomic test performed for an animal. The actual result payload
+    can be stored externally and referenced here.
+    """
+
+    provider: str | None = Field(
+        default=None,
+        description='Testing provider or lab (for example: "CDC Bovine", "Neogen").',
+    )
+    test_name: str | None = Field(
+        default=None,
+        description='Test or panel name (for example: "CLARIFIDE Plus").',
+    )
+    sample_identifier: str | None = Field(
+        default=None,
+        description="Identifier of the biological sample used for the test (if provided).",
+    )
+    result_uri: str | None = Field(
+        default=None,
+        description="URI/location of the genomic test result file (if stored externally).",
+    )
+
+
 class FeedIntakeDetail(EventDetailModel):
     """
     Feed intake event metadata.
@@ -249,6 +303,9 @@ __all__ = [
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
+    "BodyWeightDetail",
+    "BodyConditionScoreDetail",
+    "GenomeTestDetail",
     "ExitDetail",
     "MilkRecordingDetail",
     "MilkMeterYieldsDetail",

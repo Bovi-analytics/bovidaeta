@@ -3,6 +3,8 @@
 from .domains import (
     AnimalGender,
     BirthDetail,
+    BodyConditionScoreDetail,
+    BodyWeightDetail,
     Breed,
     BreedPart,
     BreedingDetail,
@@ -17,6 +19,7 @@ from .domains import (
     EventType,
     ExitDetail,
     FeedIntakeDetail,
+    GenomeTestDetail,
     GenderSorting,
     Herd,
     MilkMeterYieldsDetail,
@@ -29,6 +32,8 @@ __version__ = "0.1.0"
 __all__ = [
     "AnimalGender",
     "BirthDetail",
+    "BodyConditionScoreDetail",
+    "BodyWeightDetail",
     "Breed",
     "BreedPart",
     "BreedingDetail",
@@ -43,6 +48,7 @@ __all__ = [
     "EventType",
     "ExitDetail",
     "FeedIntakeDetail",
+    "GenomeTestDetail",
     "GenderSorting",
     "Herd",
     "MilkMeterYieldsDetail",

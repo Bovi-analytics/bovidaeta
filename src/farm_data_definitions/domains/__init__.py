@@ -17,16 +17,21 @@ from .event_details import (
     BirthDetail,
     BreedingDetail,
     CalvingDetail,
+    BodyConditionScoreDetail,
+    GenomeTestDetail,
     EventDetailModel,
     ExitDetail,
     FeedIntakeDetail,
     MilkMeterYieldsDetail,
     MilkRecordingDetail,
+    BodyWeightDetail,
 )
 from .herd import Herd
 
 __all__ = [
     "AnimalGender",
+    "BodyConditionScoreDetail",
+    "BodyWeightDetail",
     "Breed",
     "BreedPart",
     "BreedingType",
@@ -45,6 +50,7 @@ __all__ = [
     "CalvingDetail",
     "ExitDetail",
     "FeedIntakeDetail",
+    "GenomeTestDetail",
     "MilkMeterYieldsDetail",
     "MilkRecordingDetail",
 ]
