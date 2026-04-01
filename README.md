@@ -27,11 +27,11 @@ herd_id = uuid4()
 
 cow = Cow(
     animal_id=cow_id,
-    herd_identifier=herd_id,
+    herd_id=herd_id,
     gender=AnimalGender.FEMALE,
     birth_date=datetime(2020, 1, 1).date(),
 )
-herd = Herd(herd_identifier=herd_id)
+herd = Herd(herd_id=herd_id)
 
 # Direct model construction.
 event = Event(

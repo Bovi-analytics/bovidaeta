@@ -42,7 +42,7 @@ class Cow(BaseModel):
     """
     A class to represent a cow.
 
-    Specify at least `animal_id`, `herd_identifier`, `gender`, and `birth_date`
+    Specify at least `animal_id`, `herd_id`, `gender`, and `birth_date`
     when creating a new cow.
 
     """
@@ -52,10 +52,10 @@ class Cow(BaseModel):
     animal_id: UUID = Field(
         description=(
             "UUID identifier for the animal record. This identifier is "
-            "linked to `herd_identifier` and remains stable over time."
+            "linked to `herd_id` and remains stable over time."
         ),
     )
-    herd_identifier: UUID = Field(
+    herd_id: UUID = Field(
         description="UUID identifier of the herd this cow belongs to.",
     )
 
@@ -97,7 +97,7 @@ class Cow(BaseModel):
         default=None,
         description="The animal's dam ear tag number.",
     )
-    genetic_dam_identifier: UUID | None = Field(
+    genetic_dam_id: UUID | None = Field(
         default=None,
         description="UUID identifier of the animal's dam.",
     )
@@ -105,11 +105,11 @@ class Cow(BaseModel):
         default=None,
         description="The animal's sire ear tag number.",
     )
-    sire_identifier: UUID | None = Field(
+    sire_id: UUID | None = Field(
         default=None,
         description="UUID identifier of the animal's sire.",
     )
-    animal_legal_identifier: str | None = Field(
+    animal_legal_id: str | None = Field(
         default=None,
         description="In EU countries, this is typically the same as the animal ear tag.",
     )
@@ -141,7 +141,7 @@ class Cow(BaseModel):
         default=None,
         description="A number used by the US DHIA (http://www.dhia.org).",
     )
-    recipient_dam_identifier: UUID | None = Field(
+    recipient_dam_id: UUID | None = Field(
         default=None,
         description=(
             "UUID identifier of the animal's surrogate dam; only applies when the "

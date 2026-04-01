@@ -10,12 +10,12 @@ class Herd(BaseModel):
     Represents a herd: a group of cattle at the same geospatial location.
 
     One farm can therefore have multiple herds when cattle are housed at
-    multiple locations. `herd_identifier` is mandatory.
+    multiple locations. `herd_id` is mandatory.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    herd_identifier: UUID = Field(
+    herd_id: UUID = Field(
         description="UUID identifier for the herd.",
     )
     name: str | None = Field(

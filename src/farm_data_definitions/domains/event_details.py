@@ -44,7 +44,7 @@ class BirthDetail(EventDetailModel):
 class BreedingDetail(EventDetailModel):
     """Breeding event metadata."""
 
-    bull_identifier: UUID | None = Field(
+    bull_id: UUID | None = Field(
         default=None,
         description="UUID identifier of the bull used for breeding.",
     )
