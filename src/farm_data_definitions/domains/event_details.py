@@ -17,6 +17,8 @@ from .enums import (
     DepartureReason,
     DepartureType,
     GenderSorting,
+    LamenessAffectedLeg,
+    LamenessObservationContext,
     ParturitionBirthStatusType,
 )
 
@@ -199,7 +201,7 @@ class BodyWeightDetail(EventDetailModel):
 
     Represents the body weight of an animal measured during a session.
     """
-    body_weight: int | None = Field(
+    body_weight_kg: int | None = Field(
         default=None,
         ge=0,
         description="Body weight of the animal measured, in kg.",
@@ -218,6 +220,36 @@ class BodyConditionScoreDetail(EventDetailModel):
         ge=1,
         le=5,
         description="Body condition score (BCS) of the animal on a 1-5 scale.",
+    )
+
+
+class LamenessScoreDetail(EventDetailModel):
+    """
+    Lameness score event metadata.
+
+    Represents a locomotion or lameness assessment. Scoring schemes vary by
+    protocol (for example 0-3 or 1-5); the numeric value is stored as recorded.
+    """
+
+    lameness_score: int | None = Field(
+        default=None,
+        ge=0,
+        le=5,
+        description=(
+            "Lameness or locomotion score as recorded (typical scales include "
+            "0-3 or 1-5 depending on the assessment protocol)."
+        ),
+    )
+    affected_leg: LamenessAffectedLeg | None = Field(
+        default=None,
+        description=(
+            "Primarily affected limb when recorded; `not_recorded` when the score "
+            "is not tied to a single leg or the limb was not specified."
+        ),
+    )
+    observation_context: LamenessObservationContext | None = Field(
+        default=None,
+        description="Where or how the animal was observed for this assessment.",
     )
 
 
@@ -305,6 +337,7 @@ __all__ = [
     "CalvingDetail",
     "BodyWeightDetail",
     "BodyConditionScoreDetail",
+    "LamenessScoreDetail",
     "GenomeTestDetail",
     "ExitDetail",
     "MilkRecordingDetail",

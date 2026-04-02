@@ -3,10 +3,11 @@ Enumerations used in the farm domain model.
 
 This module describes parameters that need extra definition, including sex of
 animal, breeding type, gender sorting, calving ease, birth status, departure
-type/reason, breed codes, and event types.
+type/reason, breed codes, event types, and lameness assessment facets.
 """
 
 from enum import Enum
+
 
 class EventType(str, Enum):
     """
@@ -29,6 +30,7 @@ class EventType(str, Enum):
     - Treatment: Cow is treated.
     - BodyWeight: Body weight of the animal measured.
     - BodyConditionScore: Body condition score of the animal measured.
+    - LamenessScore: Locomotion or lameness score of the animal recorded.
     - GenomeTest: Genomic testing event for the animal.
     """
 
@@ -47,7 +49,44 @@ class EventType(str, Enum):
     TREATMENT = "Treatment"
     BODY_WEIGHT = "BodyWeight"
     BODY_CONDITION_SCORE = "BodyConditionScore"
+    LAMENESS_SCORE = "LamenessScore"
     GENOME_TEST = "GenomeTest"
+
+
+class LamenessAffectedLeg(str, Enum):
+    """
+    Limb or side primarily affected, when a lameness score is leg-specific.
+
+    Use `not_recorded` when the source gives a global locomotion score only,
+    or when the affected limb was not identified.
+    """
+
+    LEFT_FORE = "left_fore"
+    RIGHT_FORE = "right_fore"
+    LEFT_HIND = "left_hind"
+    RIGHT_HIND = "right_hind"
+    BILATERAL = "bilateral"
+    NOT_RECORDED = "not_recorded"
+
+
+class LamenessObservationContext(str, Enum):
+    """
+    Where or how the locomotion assessment was performed.
+
+    Fixed values keep analytics comparable across farms; use `unknown` when
+    the source system does not specify.
+    """
+
+    PARLOR_EXIT = "parlor_exit"
+    MILKING_ROBOT = "milking_robot"
+    MILKING_PARLOUR = "milking_parlour"
+    FEED_ALLEY = "feed_alley"
+    WALKWAY = "walkway"
+    FORCED_LOCOMOTION = "forced_locomotion"
+    FREE_LOCOMOTION = "free_locomotion"
+    HOLDING_PEN = "holding_pen"
+    UNKNOWN = "unknown"
+
 
 class AnimalGender(str, Enum):
     """

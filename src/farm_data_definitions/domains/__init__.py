@@ -10,6 +10,8 @@ from .enums import (
     DepartureType,
     EventType,
     GenderSorting,
+    LamenessAffectedLeg,
+    LamenessObservationContext,
     ParturitionBirthStatusType,
 )
 from .event import Event
@@ -18,13 +20,14 @@ from .event_details import (
     BreedingDetail,
     CalvingDetail,
     BodyConditionScoreDetail,
-    GenomeTestDetail,
+    BodyWeightDetail,
     EventDetailModel,
     ExitDetail,
     FeedIntakeDetail,
+    GenomeTestDetail,
+    LamenessScoreDetail,
     MilkMeterYieldsDetail,
     MilkRecordingDetail,
-    BodyWeightDetail,
 )
 from .herd import Herd
 
@@ -32,6 +35,9 @@ __all__ = [
     "AnimalGender",
     "BodyConditionScoreDetail",
     "BodyWeightDetail",
+    "LamenessAffectedLeg",
+    "LamenessObservationContext",
+    "LamenessScoreDetail",
     "Breed",
     "BreedPart",
     "BreedingType",
