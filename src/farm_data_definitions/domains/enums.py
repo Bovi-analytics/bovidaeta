@@ -15,7 +15,7 @@ class EventType(str, Enum):
 
     - Birth: Cow was born.
     - Breeding: Animal shows heat and is inseminated.
-    - BodyWeight: Body weight of the animal is measured.
+    - BodyWeightKg: Body weight of the animal is measured (in kg).
     - Calving: Cow gives birth to a calf.
     - Exit: Cow was sold to another farm, died, or was culled.
     - DryOff: Animal is no longer milked until she calves.
@@ -29,11 +29,13 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
+    - PregnancyCheck: Pregnancy check is performed, e.g., by ultrasound or blood test.
+    - SensorMeasurement: Measurement of a trait by a sensor, e.g., rumination time or activity level.
     """
 
     BIRTH = "Birth"
     BREEDING = "Breeding"
-    BODY_WEIGHT = "body_weight"
+    BODY_WEIGHT_KG = "BodyWeightKg"
     CALVING = "Calving"
     EXIT = "Exit"
     DRY_OFF = "DryOff"
@@ -45,6 +47,22 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+    PREGNANCY_CHECK = "PregnancyCheck"
+    SENSOR_MEASUREMENT = "SensorMeasurement"
+
+
+class SensorMeasurementType(str, Enum):
+    """
+    Type of sensor measurements.
+    """
+
+    EATING_TIME = "eating_time"
+    RUMINATION_TIME = "rumination_time"
+    LYING_TIME = "lying_time"
+    STANDING_TIME = "standing_time"
+    WALKING_TIME = "walking_time"
+    LEG_ACTIVITY = "leg_activity"
+    METHANE_OUTPUT = "methane_output"
 
 
 class AnimalGender(str, Enum):
@@ -60,15 +78,6 @@ class AnimalGender(str, Enum):
     MALE = "male"
     MALE_CRYPTORCHID = "male_cryptorchid"
     UNKNOWN = "unknown"
-
-
-class BodyWeightMeasurementMethod(str, Enum):
-    WALK_OVER_SCALE = "walk_over_scale"
-    STATIONARY_SCALE = "stationary_scale"
-    MILKING_ROBOT = "milking_robot"
-    TAPE = "tape"
-    VISUAL_ESTIMATE = "visual_estimate"
-    OTHER = "other"
 
 
 class BreedingType(str, Enum):
@@ -352,11 +361,3 @@ class Breed(str, Enum):
     WBL = "WBL"
     WBM = "WBM"
     WRI = "WRI"
-
-
-class PregnancyCheckMethod(str, Enum):
-    PALPATION = "palpation"
-    ULTRASOUND = "ultrasound"
-    MILK_PAG = "milk_pag"  # Pregnancy Associated Glycoproteins tested in milk
-    BLOOD_PAG = "blood_pag"  # Pregnancy Associated Glycoproteins tested in blood
-    OTHER = "other"
