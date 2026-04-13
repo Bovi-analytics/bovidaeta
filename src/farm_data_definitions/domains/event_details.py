@@ -96,8 +96,17 @@ class HerdMoveDetail(EventDetailModel):
     """
     Herd move event metadata.
 
-    Records the movement of an individual animal from one location to another
-    within the same operation (e.g. pen-to-pen, pasture, or farm-to-farm).
+    Records the reassignment of an already-registered animal from one location
+    to another. Use this event whenever an animal that exists in the system
+    changes pen, group, pasture, or physical site — including moves to and from
+    off-farm facilities such as heifer raisers. In that case the animal retains
+    its identity and pen/location assignment in the system; no new HerdEntry is
+    needed when it returns.
+
+    Contrast with HerdEntry, which is only recorded once — when the animal is
+    first registered in the system (born on farm or purchased from an external
+    source).
+
     For group moves, all animals share the same `group_move_id` on their
     individual timelines.
     """
