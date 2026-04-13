@@ -18,8 +18,6 @@ from .enums import (
     DepartureType,
     GenderSorting,
     ParturitionBirthStatusType,
-    WeightObservationMethodType,
-    WeaningMethod,
 )
 
 
@@ -28,32 +26,6 @@ class EventDetailModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-
-class WeaningDetail(EventDetailModel):
-    """Weaning event metadata"""
-
-    weaning_weight: float | None = Field(
-        default=None,
-        gt=0,
-        description="Weight of the calf at weaning measured in kg bodyweight.",
-    )
-    weaning_weight_measurement_method: WeightObservationMethodType | None = Field(
-        default=None,
-        description='The way the weaning_weight was estimated, based on ICAR enum.'
-    )
-    feed_intake_at_weaning: float | None = Field(
-        default=None,
-        description='The amount of food (kg/day) other then milk consumed by the calf on the day of weaning.'
-    )
-    weaning_method: WeaningMethod | None = Field(
-        default=None,
-        description='The protocol that was used to wean the calf.'
-    )
-    decline_period: int | None = Field(
-        default=None,
-        gt = 0
-        description='If weaning method = gradual, represents the amount of days between the last day of peak milk consumption and weaning'
-    )
     
 
 class BirthDetail(EventDetailModel):
