@@ -50,7 +50,7 @@ class HerdEntryDetail(EventDetailModel):
     entry_type: HerdEntryType = Field(
         description=(
             "The mechanism by which the animal entered the herd "
-            "(born on farm, purchased, transferred, or unknown)."
+            "(born on farm, purchased, or unknown)."
         ),
     )
     entry_date: date = Field(
@@ -71,7 +71,23 @@ class HerdEntryDetail(EventDetailModel):
         default=None,
         description=(
             "Name or identifier of the farm or operation from which the animal "
-            "originated. Applies to purchased and transferred animals; free text."
+            "originated. Applies to purchased animals; free text."
+        ),
+    )
+    purchase_price: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Price paid per animal at the time of purchase. For lot purchases, "
+            "record the per-head price (total lot price divided by number of animals). "
+            "Applies to purchased animals only."
+        ),
+    )
+    purchase_currency: str | None = Field(
+        default=None,
+        description=(
+            "ISO 4217 currency code for the purchase price (e.g. 'USD', 'EUR', 'GBP'). "
+            "Applies to purchased animals only."
         ),
     )
 
