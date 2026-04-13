@@ -112,10 +112,20 @@ class HerdMoveDetail(EventDetailModel):
     """
 
     location_from: str = Field(
-        description="Name or identifier of the location the animal is moving from (free text).",
+        description=(
+            "Location the animal is moving from. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
     )
     location_to: str = Field(
-        description="Name or identifier of the location the animal is moving to (free text).",
+        description=(
+            "Location the animal is moving to. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
     )
     group_move_id: int | None = Field(
         default=None,
@@ -123,6 +133,14 @@ class HerdMoveDetail(EventDetailModel):
         description=(
             "Optional identifier linking all animals moved together in the same "
             "group move. Each animal still has its own HERD_MOVE event."
+        ),
+    )
+    notes: str | None = Field(
+        default=None,
+        description=(
+            "Optional free-text context for the move (e.g. routine production group "
+            "rotation, heifer-raiser assignment). Health and treatment reasons are "
+            "better captured via Diagnosis and Treatment events on the same timeline."
         ),
     )
 
