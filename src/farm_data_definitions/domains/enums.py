@@ -27,7 +27,7 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
-    - HerdEntry: Animal enters the herd (born on farm, purchased, or transferred).
+    - HerdEntry: Animal enters the herd (born on farm or purchased from an external source).
     - HerdMove: Animal is moved from one location to another within the operation.
     """
 
@@ -161,13 +161,14 @@ class HerdEntryType(str, Enum):
 
     - born_on_farm: Animal was born on this farm. Complement to `Cow.born_on_farm`.
     - purchased: Animal was bought from an external source.
-    - transfer: Animal was moved from another herd within the same operation.
     - unknown: Entry reason is not recorded or not known.
+
+    Note: intra-operation moves between herds or pens are represented as
+    HerdMove events, not HerdEntry events.
     """
 
     BORN_ON_FARM = "born_on_farm"
     PURCHASED = "purchased"
-    TRANSFER = "transfer"
     UNKNOWN = "unknown"
 
 
