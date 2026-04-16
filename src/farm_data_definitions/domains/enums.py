@@ -463,7 +463,7 @@ class DiseaseCode(str, Enum):
 
     Covers the ~25 most clinically relevant conditions in dairy and beef herds.
     Less frequent or unclassified conditions should use OTH with a free-text
-    description in DiseaseDetail.disease_description.
+    description in DiseaseMetadata.disease_description.
 
     | Disease                               | Code |
     | ------------------------------------- | ---- |

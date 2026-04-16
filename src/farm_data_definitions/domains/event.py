@@ -12,8 +12,7 @@ class Event(BaseModel):
     """
     A class to represent an event on the timeline of a cow.
 
-    This model includes event identity fields plus event-specific metadata in
-    `detail`.
+    This model includes event identity fields plus event-specific metadata.
     """
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
