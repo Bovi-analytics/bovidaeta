@@ -7,3 +7,6 @@ dist/
 build/
 *.egg-info/
 enumNote
+.DS_Store
+*.sw*
+.env
