@@ -420,7 +420,7 @@ class GenomeTestMetadata(EventMetadataModel):
         default=None,
         description='Test or panel name (for example: "CLARIFIDE Plus").',
     )
-    sample_identifier: str | None = Field(
+    sample_id: str | None = Field(
         default=None,
         description="Identifier of the biological sample used for the test (if provided).",
     )
