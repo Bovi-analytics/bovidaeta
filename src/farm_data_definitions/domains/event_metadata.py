@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 """
-Typed detail payloads for timeline events.
+Typed metadata payloads for timeline events.
 
 This module describes timeline event metadata parameters that need extra
 definition in the domain model.
 """
 
+
 from datetime import date, datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -35,14 +37,14 @@ from .enums import (
 )
 
 
-class EventDetailModel(BaseModel):
+class EventMetadataModel(BaseModel):
     """Base class representing timeline event metadata."""
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
     
 
-class HerdEntryDetail(EventDetailModel):
+class HerdEntryMetadata(EventMetadataModel):
     """
     Herd entry event metadata.
 
@@ -97,7 +99,7 @@ class HerdEntryDetail(EventDetailModel):
     )
 
 
-class HerdMoveDetail(EventDetailModel):
+class HerdMoveMetadata(EventMetadataModel):
     """
     Herd move event metadata.
 
@@ -150,7 +152,7 @@ class HerdMoveDetail(EventDetailModel):
     )
 
 
-class BirthDetail(EventDetailModel):
+class BirthMetadata(EventMetadataModel):
     """Birth event metadata."""
 
     calving_ease_type: CalvingEaseType | None = Field(
@@ -163,13 +165,12 @@ class BirthDetail(EventDetailModel):
     )
 
 
-class BreedingDetail(EventDetailModel):
+class BreedingMetadata(EventMetadataModel):
     """Breeding event metadata."""
 
-    bull_identifier: int | None = Field(
+    bull_id: UUID | None = Field(
         default=None,
-        gt=0,
-        description="Identifier of the bull used for breeding, unique number within the system.",
+        description="UUID identifier of the bull used for breeding.",
     )
     bull_ear_tag: str | None = Field(
         default=None,
@@ -202,7 +203,7 @@ class BreedingDetail(EventDetailModel):
     )
 
 
-class CalvingDetail(EventDetailModel):
+class CalvingMetadata(EventMetadataModel):
     """Calving event metadata."""
 
     calving_ease_type: CalvingEaseType | None = Field(
@@ -215,7 +216,7 @@ class CalvingDetail(EventDetailModel):
     )
 
 
-class DiagnosisSampleDetail(EventDetailModel):
+class DiagnosisSampleMetadata(EventMetadataModel):
     """Diagnosis sample collecting event metadata."""
 
     sample_id: int | str | None = Field(
@@ -244,7 +245,7 @@ class DiagnosisSampleDetail(EventDetailModel):
     )
 
 
-class ExitDetail(EventDetailModel):
+class ExitMetadata(EventMetadataModel):
     """Exit event metadata."""
 
     departure_type: DepartureType | None = Field(
@@ -257,7 +258,7 @@ class ExitDetail(EventDetailModel):
     )
 
 
-class MilkRecordingDetail(EventDetailModel):
+class MilkRecordingMetadata(EventMetadataModel):
     """Milk recording event metadata."""
 
     lactose_percentage: float | None = Field(
@@ -290,7 +291,7 @@ class MilkRecordingDetail(EventDetailModel):
     )
 
 
-class MilkMeterYieldsDetail(EventDetailModel):
+class MilkMeterYieldsMetadata(EventMetadataModel):
     """
     Milk meter yields event metadata.
 
@@ -345,7 +346,7 @@ class MilkMeterYieldsDetail(EventDetailModel):
     )
 
 
-class BodyWeightDetail(EventDetailModel):
+class BodyWeightMetadata(EventMetadataModel):
     """
     Body weight event metadata.
 
@@ -358,7 +359,7 @@ class BodyWeightDetail(EventDetailModel):
     )
   
 
-class BodyConditionScoreDetail(EventDetailModel):
+class BodyConditionScoreMetadata(EventMetadataModel):
     """
     Body condition score event metadata.
 
@@ -373,7 +374,7 @@ class BodyConditionScoreDetail(EventDetailModel):
     )
 
 
-class LamenessScoreDetail(EventDetailModel):
+class LamenessScoreMetadata(EventMetadataModel):
     """
     Lameness score event metadata.
 
@@ -403,7 +404,7 @@ class LamenessScoreDetail(EventDetailModel):
     )
 
 
-class GenomeTestDetail(EventDetailModel):
+class GenomeTestMetadata(EventMetadataModel):
     """
     Genome test event metadata.
 
@@ -419,7 +420,7 @@ class GenomeTestDetail(EventDetailModel):
         default=None,
         description='Test or panel name (for example: "CLARIFIDE Plus").',
     )
-    sample_identifier: str | None = Field(
+    sample_id: str | None = Field(
         default=None,
         description="Identifier of the biological sample used for the test (if provided).",
     )
@@ -429,7 +430,7 @@ class GenomeTestDetail(EventDetailModel):
     )
 
 
-class FeedIntakeDetail(EventDetailModel):
+class FeedIntakeMetadata(EventMetadataModel):
     """
     Feed intake event metadata.
 
@@ -479,7 +480,7 @@ class FeedIntakeDetail(EventDetailModel):
     )
 
 
-class SensorMeasurementDetail(EventDetailModel):
+class SensorMeasurementMetadata(EventMetadataModel):
     """Sensor measurement event metadata."""
 
     sensor_measurement_type: SensorMeasurementType = Field(
@@ -510,11 +511,11 @@ class SensorMeasurementDetail(EventDetailModel):
         description="End of measurement interval (if applicable).",
 
 
-class DiseaseDetail(EventDetailModel):
+class DiseaseMetadata(EventMetadataModel):
     """
     Disease metadata — describes the condition itself.
 
-    Nested inside DiagnosisDetail. Captures the clinical characterisation of
+    Nested inside DiagnosisMetadata. Captures the clinical characterisation of
     what the animal has, independent of how or when it was detected.
     """
 
@@ -564,7 +565,7 @@ class DiseaseDetail(EventDetailModel):
         default=None,
         description=(
             "Estimated date/time when the condition first started. "
-            "May be earlier than detection_time in DiagnosisDetail."
+            "May be earlier than detection_time in DiagnosisMetadata."
         ),
     )
     recurrence: bool | None = Field(
@@ -576,7 +577,7 @@ class DiseaseDetail(EventDetailModel):
     )
 
 
-class DiagnosisDetail(EventDetailModel):
+class DiagnosisMetadata(EventMetadataModel):
     """
     Diagnosis event metadata — describes the act of identifying a condition.
 
@@ -585,7 +586,7 @@ class DiagnosisDetail(EventDetailModel):
     `disease` field.
     """
 
-    disease: DiseaseDetail | None = Field(
+    disease: DiseaseMetadata | None = Field(
         default=None,
         description="Nested model describing the disease or condition that was diagnosed.",
     )
@@ -632,7 +633,7 @@ class DiagnosisDetail(EventDetailModel):
     )
 
 
-class TreatmentDetail(EventDetailModel):
+class TreatmentMetadata(EventMetadataModel):
     """
     Treatment event metadata — describes a single drug application or intervention.
 
@@ -758,23 +759,23 @@ class TreatmentDetail(EventDetailModel):
 
 
 __all__ = [
-    "EventDetailModel",
-    "HerdEntryDetail",
-    "HerdMoveDetail",
-    "BirthDetail",
-    "BreedingDetail",
-    "CalvingDetail",
-    "BodyWeightDetail",
-    "BodyConditionScoreDetail",
-    "LamenessScoreDetail",
-    "GenomeTestDetail",
-    "ExitDetail",
-    "MilkRecordingDetail",
-    "MilkMeterYieldsDetail",
-    "FeedIntakeDetail",
-    "DiagnosisSampleDetail",
-    "SensorMeasurementDetail",
-    "DiseaseDetail",
-    "DiagnosisDetail",
-    "TreatmentDetail",
+    "EventMetadataModel",
+    "HerdEntryMetadata",
+    "HerdMoveMetadata",
+    "BirthMetadata",
+    "BreedingMetadata",
+    "CalvingMetadata",
+    "BodyWeightMetadata",
+    "BodyConditionScoreMetadata",
+    "LamenessScoreMetadata",
+    "GenomeTestMetadata",
+    "ExitMetadata",
+    "MilkRecordingMetadata",
+    "MilkMeterYieldsMetadata",
+    "FeedIntakeMetadata",
+    "DiagnosisSampleMetadata",
+    "SensorMeasurementMetadata",
+    "DiseaseMetadata",
+    "DiagnosisMetadata",
+    "TreatmentMetadata",
 ]

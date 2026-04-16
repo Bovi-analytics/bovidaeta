@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -41,21 +42,23 @@ class Cow(BaseModel):
     """
     A class to represent a cow.
 
-    Specify at least `animal_id`, `gender`, and `birth_date` when creating a
-    new cow.
+    Specify at least `animal_id`, `herd_id`, `gender`, and `birth_date`
+    when creating a new cow.
 
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    animal_id: int = Field(
-        gt=0,
+    animal_id: UUID = Field(
         description=(
-            "The primary and unique animal's identifier within the entire herd."
-            "This id cannot be used by any other animal, also after the cow has" 
-            "been sold or died"
+            "UUID identifier for the animal record. This identifier is "
+            "linked to `herd_id` and remains stable over time."
         ),
     )
+    herd_id: UUID = Field(
+        description="UUID identifier of the herd this cow belongs to.",
+    )
+
     gender: AnimalGender = Field(
         description=(
             "The animal's gender (male/female), based on ICAR enumeration for sex of "
@@ -94,21 +97,19 @@ class Cow(BaseModel):
         default=None,
         description="The animal's dam ear tag number.",
     )
-    genetic_dam_identifier: int | None = Field(
+    genetic_dam_id: UUID | None = Field(
         default=None,
-        gt=0,
-        description="The animal's dam identifier.",
+        description="UUID identifier of the animal's dam.",
     )
     sire_ear_tag: str | None = Field(
         default=None,
         description="The animal's sire ear tag number.",
     )
-    sire_identifier: int | None = Field(
+    sire_id: UUID | None = Field(
         default=None,
-        gt=0,
-        description="The animal's sire identifier.",
+        description="UUID identifier of the animal's sire.",
     )
-    animal_legal_identifier: str | None = Field(
+    animal_legal_id: str | None = Field(
         default=None,
         description="In EU countries, this is typically the same as the animal ear tag.",
     )
@@ -140,13 +141,12 @@ class Cow(BaseModel):
         default=None,
         description="A number used by the US DHIA (http://www.dhia.org).",
     )
-    recipient_dam_identifier: int | None = Field(
+    recipient_dam_id: UUID | None = Field(
         default=None,
-        gt=0,
         description=(
-            "The animal's surrogate dam identifier; only applies when the cow was "
-            "born using assisted reproductive technologies such as in vitro embryo "
-            "production or embryo transfer."
+            "UUID identifier of the animal's surrogate dam; only applies when the "
+            "cow was born using assisted reproductive technologies such as in vitro "
+            "embryo production or embryo transfer."
         ),
     )
     breed: list[BreedPart] = Field(
