@@ -3,10 +3,11 @@ Enumerations used in the farm domain model.
 
 This module describes parameters that need extra definition, including sex of
 animal, breeding type, gender sorting, calving ease, birth status, departure
-type/reason, breed codes, and event types.
+type/reason, breed codes, event types, and lameness assessment facets.
 """
 
 from enum import Enum
+
 
 class EventType(str, Enum):
     """
@@ -14,6 +15,7 @@ class EventType(str, Enum):
 
     - Birth: Cow was born.
     - Breeding: Animal shows heat and is inseminated.
+    - BodyWeightKg: Body weight of the animal is measured (in kg).
     - Calving: Cow gives birth to a calf.
     - Exit: Cow was sold to another farm, died, or was culled.
     - DryOff: Animal is no longer milked until she calves.
@@ -27,10 +29,20 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
+    - PregnancyCheck: Pregnancy check is performed, e.g., by ultrasound or blood test.
+    - SensorMeasurement: Measurement of a trait by a sensor, e.g., rumination time or activity level.
+    - BodyWeight: Body weight of the animal measured.
+    - BodyConditionScore: Body condition score of the animal measured.
+    - LamenessScore: Locomotion or lameness score of the animal recorded.
+    - GenomeTest: Genomic testing event for the animal.
+    - HerdEntry: Animal enters the herd (born on farm or purchased from an external source).
+    - HerdMove: Animal is moved from one location to another within the operation.
+    - Weaning: the diet of the calf will no longer contain milk
     """
 
     BIRTH = "Birth"
     BREEDING = "Breeding"
+    BODY_WEIGHT_KG = "BodyWeightKg"
     CALVING = "Calving"
     EXIT = "Exit"
     DRY_OFF = "DryOff"
@@ -42,6 +54,65 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+    PREGNANCY_CHECK = "PregnancyCheck"
+    SENSOR_MEASUREMENT = "SensorMeasurement"
+    BODY_WEIGHT = "BodyWeight"
+    BODY_CONDITION_SCORE = "BodyConditionScore"
+    LAMENESS_SCORE = "LamenessScore"
+    GENOME_TEST = "GenomeTest"
+    HERD_ENTRY = "HerdEntry"
+    HERD_MOVE = "HerdMove"
+    WEANING = "Weaning"
+
+
+class SensorMeasurementType(str, Enum):
+    """
+    Type of sensor measurements.
+    """
+
+    EATING_TIME = "eating_time"
+    RUMINATION_TIME = "rumination_time"
+    LYING_TIME = "lying_time"
+    STANDING_TIME = "standing_time"
+    WALKING_TIME = "walking_time"
+    LEG_ACTIVITY = "leg_activity"
+    METHANE_OUTPUT = "methane_output"
+
+
+class LamenessAffectedLeg(str, Enum):
+    """
+    Limb or side primarily affected, when a lameness score is leg-specific.
+
+    Use `not_recorded` when the source gives a global locomotion score only,
+    or when the affected limb was not identified.
+    """
+
+    LEFT_FORE = "left_fore"
+    RIGHT_FORE = "right_fore"
+    LEFT_HIND = "left_hind"
+    RIGHT_HIND = "right_hind"
+    BILATERAL = "bilateral"
+    NOT_RECORDED = "not_recorded"
+
+
+class LamenessObservationContext(str, Enum):
+    """
+    Where or how the locomotion assessment was performed.
+
+    Fixed values keep analytics comparable across farms; use `unknown` when
+    the source system does not specify.
+    """
+
+    PARLOR_EXIT = "parlor_exit"
+    MILKING_ROBOT = "milking_robot"
+    MILKING_PARLOUR = "milking_parlour"
+    FEED_ALLEY = "feed_alley"
+    WALKWAY = "walkway"
+    FORCED_LOCOMOTION = "forced_locomotion"
+    FREE_LOCOMOTION = "free_locomotion"
+    HOLDING_PEN = "holding_pen"
+    UNKNOWN = "unknown"
+
 
 class AnimalGender(str, Enum):
     """
@@ -66,6 +137,24 @@ class BreedingType(str, Enum):
     NATURAL_SERVICE = "natural_service"
     WITH_BULL = "with_bull"
     EMBRYO_TRANSFER = "embryo_transfer"
+
+
+class DiagnosisSampleType(str, Enum):
+    """
+    Type of samples that collected for diagnosis purpose.
+    """
+
+    MILK_INDIVIDUAL = "milk_individual"
+    MILK_BULK_TANK = "milk_bulk_tank"
+    BLOOD_SERUM = "blood_serum"
+    BLOOD_WHOLE = "blood_whole"
+    FECAL = "fecal"
+    URINE = "urine"
+    EAR_NOTCH = "ear_notch"
+    HAIR = "hair"
+    SWAB_NASAL = "swab_nasal"
+    SWAB_VAGINAL = "swab_vaginal"
+    TISSUE_NECROPSY = "tissue_necropsy"
 
 
 class GenderSorting(str, Enum):
@@ -148,6 +237,23 @@ class DepartureReason(str, Enum):
     BAD_TYPE = "bad_type"
     BEHAVIOUR = "behaviour"
     OTHER = "other"
+    UNKNOWN = "unknown"
+
+
+class HerdEntryType(str, Enum):
+    """
+    Reason or mechanism by which an animal entered the herd.
+
+    - born_on_farm: Animal was born on this farm. Complement to `Cow.born_on_farm`.
+    - purchased: Animal was bought from an external source.
+    - unknown: Entry reason is not recorded or not known.
+
+    Note: intra-operation moves between herds or pens are represented as
+    HerdMove events, not HerdEntry events.
+    """
+
+    BORN_ON_FARM = "born_on_farm"
+    PURCHASED = "purchased"
     UNKNOWN = "unknown"
 
 
@@ -323,3 +429,160 @@ class Breed(str, Enum):
     WRI = "WRI"
 
 
+class DiagnosisSeverity(str, Enum):
+    """
+    Clinical severity of a disease diagnosis.
+
+    Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisSeverityType.json
+    """
+
+    LIGHT = "Light"
+    MODERATE = "Moderate"
+    SEVERE = "Severe"
+
+
+class DiagnosisStage(str, Enum):
+    """
+    Stage of disease progression at time of diagnosis.
+
+    Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisStageType.json
+    """
+
+    EARLY = "Early"
+    ACUTE = "Acute"
+    SUB_ACUTE = "SubAcute"
+    CHRONIC = "Chronic"
+    ACUTE_ON_CHRONIC = "AcuteOnChronic"
+    END_STAGE = "EndStage"
+    OTHER = "Other"
+
+
+class DiseaseCode(str, Enum):
+    """
+    Common cattle disease codes used in diagnosis events.
+
+    Covers the ~25 most clinically relevant conditions in dairy and beef herds.
+    Less frequent or unclassified conditions should use OTH with a free-text
+    description in DiseaseDetail.disease_description.
+
+    | Disease                               | Code |
+    | ------------------------------------- | ---- |
+    | Mastitis                              | MAS  |
+    | Ketosis / Acetonaemia                 | KET  |
+    | Milk Fever / Hypocalcaemia            | MFV  |
+    | Left Displaced Abomasum               | LDA  |
+    | Right Displaced Abomasum              | RDA  |
+    | Retained Placenta                     | RTP  |
+    | Metritis                              | MET  |
+    | Endometritis                          | END  |
+    | Ovarian Cyst                          | OVC  |
+    | Digital Dermatitis                    | DDM  |
+    | Foot Rot / Interdigital Phlegmon      | FTR  |
+    | Sole Ulcer                            | SUL  |
+    | White Line Disease                    | WLD  |
+    | Bovine Respiratory Disease            | BRD  |
+    | Bovine Viral Diarrhoea                | BVD  |
+    | Infectious Bovine Rhinotracheitis     | IBR  |
+    | Grass Tetany / Hypomagnesaemia        | MGT  |
+    | Bloat                                 | BLT  |
+    | Ruminal Acidosis                      | RAC  |
+    | Traumatic Reticuloperitonitis         | TRP  |
+    | Diarrhoea / Enteritis                 | DIA  |
+    | Uterine Prolapse                      | UTP  |
+    | Johne's Disease / Paratuberculosis    | JOH  |
+    | Leptospirosis                         | LEP  |
+    | Ringworm                              | RWM  |
+    | Infectious Bovine Keratoconjunctivitis| IBK  |
+    | Other                                 | OTH  |
+    """
+
+    MAS = "MAS"
+    KET = "KET"
+    MFV = "MFV"
+    LDA = "LDA"
+    RDA = "RDA"
+    RTP = "RTP"
+    MET = "MET"
+    END = "END"
+    OVC = "OVC"
+    DDM = "DDM"
+    FTR = "FTR"
+    SUL = "SUL"
+    WLD = "WLD"
+    BRD = "BRD"
+    BVD = "BVD"
+    IBR = "IBR"
+    MGT = "MGT"
+    BLT = "BLT"
+    RAC = "RAC"
+    TRP = "TRP"
+    DIA = "DIA"
+    UTP = "UTP"
+    JOH = "JOH"
+    LEP = "LEP"
+    RWM = "RWM"
+    IBK = "IBK"
+    OTH = "OTH"
+
+
+class DiagnosisMethod(str, Enum):
+    """Method used to identify a disease."""
+
+    CLINICAL = "clinical"
+    LABORATORY = "laboratory"
+    SENSOR_BASED = "sensor_based"
+    POST_MORTEM = "post_mortem"
+    OTHER = "other"
+
+
+class ConfirmationStatus(str, Enum):
+    """Whether the diagnosis is still a suspicion or has been confirmed."""
+
+    SUSPECTED = "suspected"
+    CONFIRMED = "confirmed"
+
+
+class DiagnosticSource(str, Enum):
+    """Who or what made the diagnosis."""
+
+    VETERINARIAN = "veterinarian"
+    FARM_WORKER = "farm_worker"
+    SENSOR = "sensor"
+    LABORATORY = "laboratory"
+    OTHER = "other"
+
+
+class RouteOfAdministration(str, Enum):
+    """
+    Route by which a drug or treatment is administered.
+    """
+
+    INTRAMAMMARY = "intramammary"
+    INTRAVENOUS = "intravenous"
+    INTRAMUSCULAR = "intramuscular"
+    SUBCUTANEOUS = "subcutaneous"
+    ORAL = "oral"
+    INTRAUTERINE = "intrauterine"
+    TOPICAL = "topical"
+    OTHER = "other"
+
+
+class TreatmentFrequency(str, Enum):
+    """How often a drug application is repeated within a treatment course."""
+
+    ONCE = "once"
+    TWICE_DAILY = "twice_daily"
+    DAILY = "daily"
+    EVERY_OTHER_DAY = "every_other_day"
+    WEEKLY = "weekly"
+    OTHER = "other"
+
+
+class TreatmentResponseStatus(str, Enum):
+    """Observed animal response at end of or after a treatment course."""
+
+    IMPROVING = "improving"
+    NO_CHANGE = "no_change"
+    WORSENED = "worsened"
+    RECOVERED = "recovered"
+    DIED = "died"
