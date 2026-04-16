@@ -29,6 +29,7 @@ class EventType(str, Enum):
     - Treatment: Cow is treated.
     - HerdEntry: Animal enters the herd (born on farm or purchased from an external source).
     - HerdMove: Animal is moved from one location to another within the operation.
+    - Weaning: the diet of the calf will no longer contain milk
     """
 
     BIRTH = "Birth"
@@ -46,6 +47,9 @@ class EventType(str, Enum):
     TREATMENT = "Treatment"
     HERD_ENTRY = "HerdEntry"
     HERD_MOVE = "HerdMove"
+    WEANING = "Weaning"
+
+  
 
 class AnimalGender(str, Enum):
     """

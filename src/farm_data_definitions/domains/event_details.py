@@ -36,6 +36,7 @@ class EventDetailModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
+    
 
 class HerdEntryDetail(EventDetailModel):
     """
