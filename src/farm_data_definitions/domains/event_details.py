@@ -23,6 +23,7 @@ from .enums import (
     DiagnosticSource,
     DiseaseCode,
     GenderSorting,
+    HerdEntryType,
     ParturitionBirthStatusType,
     RouteOfAdministration,
     TreatmentFrequency,
@@ -36,6 +37,114 @@ class EventDetailModel(BaseModel):
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
     
+
+class HerdEntryDetail(EventDetailModel):
+    """
+    Herd entry event metadata.
+
+    Records how and when an animal joined the herd. For animals born on farm,
+    this event coexists with a BIRTH event on the same timeline — the BIRTH
+    event carries biological details (calving ease, birth status) while this
+    event records herd membership.
+    """
+
+    entry_type: HerdEntryType = Field(
+        description=(
+            "The mechanism by which the animal entered the herd "
+            "(born on farm, purchased, or unknown)."
+        ),
+    )
+    entry_date: date = Field(
+        description=(
+            "Date the animal officially entered the herd, format YYYY-MM-DD. "
+            "For born-on-farm animals this is typically the birth date."
+        ),
+    )
+    age_at_entry: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Age of the animal at the time of herd entry, expressed in days. "
+            "Zero for animals born on farm."
+        ),
+    )
+    source_farm: str | None = Field(
+        default=None,
+        description=(
+            "Name or identifier of the farm or operation from which the animal "
+            "originated. Applies to purchased animals; free text."
+        ),
+    )
+    purchase_price: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Price paid per animal at the time of purchase. For lot purchases, "
+            "record the per-head price (total lot price divided by number of animals). "
+            "Applies to purchased animals only."
+        ),
+    )
+    purchase_currency: str | None = Field(
+        default=None,
+        description=(
+            "ISO 4217 currency code for the purchase price (e.g. 'USD', 'EUR', 'GBP'). "
+            "Applies to purchased animals only."
+        ),
+    )
+
+
+class HerdMoveDetail(EventDetailModel):
+    """
+    Herd move event metadata.
+
+    Records the reassignment of an already-registered animal from one location
+    to another. Use this event whenever an animal that exists in the system
+    changes pen, group, pasture, or physical site — including moves to and from
+    off-farm facilities such as heifer raisers. In that case the animal retains
+    its identity and pen/location assignment in the system; no new HerdEntry is
+    needed when it returns.
+
+    Contrast with HerdEntry, which is only recorded once — when the animal is
+    first registered in the system (born on farm or purchased from an external
+    source).
+
+    For group moves, all animals share the same `group_move_id` on their
+    individual timelines.
+    """
+
+    location_from: str = Field(
+        description=(
+            "Location the animal is moving from. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
+    )
+    location_to: str = Field(
+        description=(
+            "Location the animal is moving to. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
+    )
+    group_move_id: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Optional identifier linking all animals moved together in the same "
+            "group move. Each animal still has its own HERD_MOVE event."
+        ),
+    )
+    notes: str | None = Field(
+        default=None,
+        description=(
+            "Optional free-text context for the move (e.g. routine production group "
+            "rotation, heifer-raiser assignment). Health and treatment reasons are "
+            "better captured via Diagnosis and Treatment events on the same timeline."
+        ),
+    )
+
 
 class BirthDetail(EventDetailModel):
     """Birth event metadata."""
@@ -502,6 +611,8 @@ class TreatmentDetail(EventDetailModel):
 
 __all__ = [
     "EventDetailModel",
+    "HerdEntryDetail",
+    "HerdMoveDetail",
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
