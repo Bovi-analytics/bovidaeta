@@ -14,12 +14,24 @@ from pydantic import BaseModel, ConfigDict, Field
 from .enums import (
     BreedingType,
     CalvingEaseType,
+    ConfirmationStatus,
     DepartureReason,
     DepartureType,
+    DiagnosisMethod,
+    DiagnosisSeverity,
+    DiagnosisStage,
+    DiagnosticSource,
+    DiseaseCode,
     GenderSorting,
+    LamenessAffectedLeg,
+    LamenessObservationContext,
+    HerdEntryType,
     ParturitionBirthStatusType,
     DiagnosisSampleType,
     SensorMeasurementType,
+    RouteOfAdministration,
+    TreatmentFrequency,
+    TreatmentResponseStatus,
 )
 
 
@@ -27,6 +39,115 @@ class EventDetailModel(BaseModel):
     """Base class representing timeline event metadata."""
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
+
+    
+
+class HerdEntryDetail(EventDetailModel):
+    """
+    Herd entry event metadata.
+
+    Records how and when an animal joined the herd. For animals born on farm,
+    this event coexists with a BIRTH event on the same timeline — the BIRTH
+    event carries biological details (calving ease, birth status) while this
+    event records herd membership.
+    """
+
+    entry_type: HerdEntryType = Field(
+        description=(
+            "The mechanism by which the animal entered the herd "
+            "(born on farm, purchased, or unknown)."
+        ),
+    )
+    entry_date: date = Field(
+        description=(
+            "Date the animal officially entered the herd, format YYYY-MM-DD. "
+            "For born-on-farm animals this is typically the birth date."
+        ),
+    )
+    age_at_entry: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Age of the animal at the time of herd entry, expressed in days. "
+            "Zero for animals born on farm."
+        ),
+    )
+    source_farm: str | None = Field(
+        default=None,
+        description=(
+            "Name or identifier of the farm or operation from which the animal "
+            "originated. Applies to purchased animals; free text."
+        ),
+    )
+    purchase_price: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Price paid per animal at the time of purchase. For lot purchases, "
+            "record the per-head price (total lot price divided by number of animals). "
+            "Applies to purchased animals only."
+        ),
+    )
+    purchase_currency: str | None = Field(
+        default=None,
+        description=(
+            "ISO 4217 currency code for the purchase price (e.g. 'USD', 'EUR', 'GBP'). "
+            "Applies to purchased animals only."
+        ),
+    )
+
+
+class HerdMoveDetail(EventDetailModel):
+    """
+    Herd move event metadata.
+
+    Records the reassignment of an already-registered animal from one location
+    to another. Use this event whenever an animal that exists in the system
+    changes pen, group, pasture, or physical site — including moves to and from
+    off-farm facilities such as heifer raisers. In that case the animal retains
+    its identity and pen/location assignment in the system; no new HerdEntry is
+    needed when it returns.
+
+    Contrast with HerdEntry, which is only recorded once — when the animal is
+    first registered in the system (born on farm or purchased from an external
+    source).
+
+    For group moves, all animals share the same `group_move_id` on their
+    individual timelines.
+    """
+
+    location_from: str = Field(
+        description=(
+            "Location the animal is moving from. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
+    )
+    location_to: str = Field(
+        description=(
+            "Location the animal is moving to. Use the pen ID for pen-to-pen moves "
+            "(e.g. '42'), a descriptive name for pastures (e.g. 'North Pasture'), "
+            "or a facility name for off-farm locations (e.g. 'Heifer Raiser - Smith Farm'). "
+            "Free text; use consistent naming within your operation."
+        ),
+    )
+    group_move_id: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Optional identifier linking all animals moved together in the same "
+            "group move. Each animal still has its own HERD_MOVE event."
+        ),
+    )
+    notes: str | None = Field(
+        default=None,
+        description=(
+            "Optional free-text context for the move (e.g. routine production group "
+            "rotation, heifer-raiser assignment). Health and treatment reasons are "
+            "better captured via Diagnosis and Treatment events on the same timeline."
+        ),
+    )
 
 
 class BirthDetail(EventDetailModel):
@@ -224,6 +345,90 @@ class MilkMeterYieldsDetail(EventDetailModel):
     )
 
 
+class BodyWeightDetail(EventDetailModel):
+    """
+    Body weight event metadata.
+
+    Represents the body weight of an animal measured during a session.
+    """
+    body_weight_kg: int | None = Field(
+        default=None,
+        ge=0,
+        description="Body weight of the animal measured, in kg.",
+    )
+  
+
+class BodyConditionScoreDetail(EventDetailModel):
+    """
+    Body condition score event metadata.
+
+    Represents the body condition score (BCS) of an animal.
+    """
+
+    body_condition_score: float | None = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="Body condition score (BCS) of the animal on a 1-5 scale.",
+    )
+
+
+class LamenessScoreDetail(EventDetailModel):
+    """
+    Lameness score event metadata.
+
+    Represents a locomotion or lameness assessment. Scoring schemes vary by
+    protocol (for example 0-3 or 1-5); the numeric value is stored as recorded.
+    """
+
+    lameness_score: int | None = Field(
+        default=None,
+        ge=0,
+        le=5,
+        description=(
+            "Lameness or locomotion score as recorded (typical scales include "
+            "0-3 or 1-5 depending on the assessment protocol)."
+        ),
+    )
+    affected_leg: LamenessAffectedLeg | None = Field(
+        default=None,
+        description=(
+            "Primarily affected limb when recorded; `not_recorded` when the score "
+            "is not tied to a single leg or the limb was not specified."
+        ),
+    )
+    observation_context: LamenessObservationContext | None = Field(
+        default=None,
+        description="Where or how the animal was observed for this assessment.",
+    )
+
+
+class GenomeTestDetail(EventDetailModel):
+    """
+    Genome test event metadata.
+
+    Represents a genomic test performed for an animal. The actual result payload
+    can be stored externally and referenced here.
+    """
+
+    provider: str | None = Field(
+        default=None,
+        description='Testing provider or lab (for example: "CDC Bovine", "Neogen").',
+    )
+    test_name: str | None = Field(
+        default=None,
+        description='Test or panel name (for example: "CLARIFIDE Plus").',
+    )
+    sample_identifier: str | None = Field(
+        default=None,
+        description="Identifier of the biological sample used for the test (if provided).",
+    )
+    result_uri: str | None = Field(
+        default=None,
+        description="URI/location of the genomic test result file (if stored externally).",
+    )
+
+
 class FeedIntakeDetail(EventDetailModel):
     """
     Feed intake event metadata.
@@ -303,18 +508,273 @@ class SensorMeasurementDetail(EventDetailModel):
     end_time: datetime | None = Field(
         default=None,
         description="End of measurement interval (if applicable).",
+
+
+class DiseaseDetail(EventDetailModel):
+    """
+    Disease metadata — describes the condition itself.
+
+    Nested inside DiagnosisDetail. Captures the clinical characterisation of
+    what the animal has, independent of how or when it was detected.
+    """
+
+    disease_code: DiseaseCode | None = Field(
+        default=None,
+        description=(
+            "Standardised disease code. Use OTH when the condition is not in the "
+            "DiseaseCode enum and provide free-text in disease_description."
+        ),
+    )
+    disease_description: str | None = Field(
+        default=None,
+        description=(
+            "Free-text description of the condition. Required when disease_code is OTH; "
+            'optional extra detail otherwise (e.g. "Left front quarter mastitis").'
+        ),
+    )
+    stage: DiagnosisStage | None = Field(
+        default=None,
+        description=(
+            "Stage of disease progression at time of diagnosis. "
+            "Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisStageType.json"
+        ),
+    )
+    affected_system: str | None = Field(
+        default=None,
+        description=(
+            'Body system primarily affected (e.g. "udder", "metabolic", '
+            '"reproductive", "respiratory", "locomotion").'
+        ),
+    )
+    body_part: str | None = Field(
+        default=None,
+        description=(
+            'Specific anatomical location (e.g. "left front quarter", '
+            '"right hind hoof", "uterus").'
+        ),
+    )
+    laterality: str | None = Field(
+        default=None,
+        description=(
+            'Side of the body affected when relevant '
+            '(e.g. "left", "right", "bilateral", "LFQ" for left front quarter).'
+        ),
+    )
+    onset_time: datetime | None = Field(
+        default=None,
+        description=(
+            "Estimated date/time when the condition first started. "
+            "May be earlier than detection_time in DiagnosisDetail."
+        ),
+    )
+    recurrence: bool | None = Field(
+        default=None,
+        description=(
+            "True if this is a recurring episode of the same condition in this "
+            "lactation; False if it is the first occurrence."
+        ),
+    )
+
+
+class DiagnosisDetail(EventDetailModel):
+    """
+    Diagnosis event metadata — describes the act of identifying a condition.
+
+    Captures who detected the disease, how, how certain they are, and what
+    follow-up is needed. The disease itself is described in the nested
+    `disease` field.
+    """
+
+    disease: DiseaseDetail | None = Field(
+        default=None,
+        description="Nested model describing the disease or condition that was diagnosed.",
+    )
+    severity: DiagnosisSeverity | None = Field(
+        default=None,
+        description=(
+            "Clinical severity at time of diagnosis. "
+            "Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisSeverityType.json"
+        ),
+    )
+    diagnosis_method: DiagnosisMethod | None = Field(
+        default=None,
+        description='Method used to identify the condition (e.g. "clinical", "laboratory").',
+    )
+    confirmation_status: ConfirmationStatus | None = Field(
+        default=None,
+        description="Whether this is a suspected or confirmed diagnosis.",
+    )
+    diagnostic_source: DiagnosticSource | None = Field(
+        default=None,
+        description="Who or what made the diagnosis (vet, farm worker, sensor, lab).",
+    )
+    diagnosed_by: str | None = Field(
+        default=None,
+        description=(
+            "Name or identifier of the specific person who made the diagnosis. "
+            'Complements diagnostic_source (e.g. "Dr. Smith", "farm_worker_id:42").'
+        ),
+    )
+    detection_time: datetime | None = Field(
+        default=None,
+        description=(
+            "Exact date/time the condition was detected. May differ from the event "
+            "timestamp if there was a recording delay."
+        ),
+    )
+    follow_up_date: date | None = Field(
+        default=None,
+        description="Recommended calendar date for a follow-up check (format: YYYY-MM-DD).",
+    )
+    notes: str | None = Field(
+        default=None,
+        description="Additional free-text clinical notes from the diagnosing party.",
+    )
+
+
+class TreatmentDetail(EventDetailModel):
+    """
+    Treatment event metadata — describes a single drug application or intervention.
+
+    One Treatment event = one application. When a course requires multiple
+    applications, each gets its own event linked via treatment_course_id.
+    """
+
+    # --- Link back to the condition being treated ---
+    disease_code: DiseaseCode | None = Field(
+        default=None,
+        description=(
+            "Disease code of the condition being treated. Allows linking to a "
+            "Diagnosis event without a strict foreign key."
+        ),
+    )
+
+    # --- Course tracking ---
+    treatment_course_id: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Shared identifier grouping all Treatment events in the same course, "
+            "assigned by the source system."
+        ),
+    )
+    application_number: int | None = Field(
+        default=None,
+        ge=1,
+        description="Sequence of this application within its course (1 = first, 2 = second, …).",
+    )
+    total_applications: int | None = Field(
+        default=None,
+        ge=1,
+        description="Total number of applications planned for the full treatment course.",
+    )
+    frequency: TreatmentFrequency | None = Field(
+        default=None,
+        description="How often the drug is applied within the course.",
+    )
+
+    # --- Drug ---
+    drug_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="Identifier of the drug as registered in the farm or veterinary system.",
+    )
+    drug_name: str | None = Field(
+        default=None,
+        description='Commercial or generic name of the drug (e.g. "Penicillin G", "Metacam").',
+    )
+    dosage: float | None = Field(
+        default=None,
+        ge=0,
+        description="Amount of drug administered in this single application.",
+    )
+    dosage_unit: str | None = Field(
+        default=None,
+        description='Unit for the dosage field (e.g. "ml", "g", "tablet").',
+    )
+    route_of_administration: RouteOfAdministration | None = Field(
+        default=None,
+        description="Route by which the drug was administered.",
+    )
+
+    # --- Timing ---
+    treatment_start_time: datetime | None = Field(
+        default=None,
+        description="Date/time this specific application started.",
+    )
+    treatment_end_time: datetime | None = Field(
+        default=None,
+        description="Date/time this specific application ended.",
+    )
+    course_end_date: date | None = Field(
+        default=None,
+        description="Calendar date the full treatment course is expected to end (format: YYYY-MM-DD).",
+    )
+
+    # --- Regulatory ---
+    milk_withdrawal_days: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Days milk must be withheld after the last application of the course."
+        ),
+    )
+    meat_withdrawal_days: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Days before this animal may enter the food chain after the last application."
+        ),
+    )
+    prescription_id: str | None = Field(
+        default=None,
+        description=(
+            "Veterinary prescription reference number. Required in many jurisdictions "
+            "for prescription-only medicines."
+        ),
+    )
+
+    # --- Operator & outcome ---
+    operator_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="Numeric identifier of the person who administered the treatment.",
+    )
+    treated_by: str | None = Field(
+        default=None,
+        description=(
+            'Name or role of the person who administered the treatment '
+            '(e.g. "vet", "farm_worker_id:42"). Complements operator_id.'
+        ),
+    )
+    response_status: TreatmentResponseStatus | None = Field(
+        default=None,
+        description="Observed animal response recorded at end of or after the course.",
+    )
+    notes: str | None = Field(
+        default=None,
+        description="Additional free-text notes on the treatment.",
     )
 
 
 __all__ = [
     "EventDetailModel",
+    "HerdEntryDetail",
+    "HerdMoveDetail",
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
+    "BodyWeightDetail",
+    "BodyConditionScoreDetail",
+    "LamenessScoreDetail",
+    "GenomeTestDetail",
     "ExitDetail",
     "MilkRecordingDetail",
     "MilkMeterYieldsDetail",
     "FeedIntakeDetail",
     "DiagnosisSampleDetail",
     "SensorMeasurementDetail",
+    "DiseaseDetail",
+    "DiagnosisDetail",
+    "TreatmentDetail",
 ]
