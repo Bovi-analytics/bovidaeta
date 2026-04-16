@@ -27,6 +27,8 @@ from .enums import (
     LamenessObservationContext,
     HerdEntryType,
     ParturitionBirthStatusType,
+    DiagnosisSampleType,
+    SensorMeasurementType,
     RouteOfAdministration,
     TreatmentFrequency,
     TreatmentResponseStatus,
@@ -210,6 +212,35 @@ class CalvingDetail(EventDetailModel):
     parturition_birth_status_type: ParturitionBirthStatusType | None = Field(
         default=None,
         description="The way a calf was born, based on ICAR enum.",
+    )
+
+
+class DiagnosisSampleDetail(EventDetailModel):
+    """Diagnosis sample collecting event metadata."""
+
+    sample_id: int | str | None = Field(
+        default=None,
+        description="Unique identifier or barcode of the collected sample.",
+    )
+    diagnosis_sample_type: DiagnosisSampleType | None = Field(
+        default=None,
+        description="The biological material collected (e.g., milk, blood, fecal).",
+    )
+    diagnostic_target: str | None = Field(
+        default=None,
+        description="The pathogen or condition being tested for, e.g., 'Mastitis' or 'Ketosis'.",
+    )
+    collection_method: str | None = Field(
+        default=None,
+        description="The tool or process used, e.g., 'Sterile Strip' or 'Vacutainer'.",
+    )
+    technician_id: int | str | None = Field(
+        default=None,
+        description="Identifier of the person (Vet or Farm Staff) who collected the sample.",
+    )
+    is_pooled: bool = Field(
+        default=False,
+        description="True if the sample contains material from multiple cows (e.g. bulk tank or pen pool).",
     )
 
 
@@ -446,6 +477,37 @@ class FeedIntakeDetail(EventDetailModel):
         default=None,
         description="End time of feeding session (format: YYYY-MM-DD HH:MM:SS).",
     )
+
+
+class SensorMeasurementDetail(EventDetailModel):
+    """Sensor measurement event metadata."""
+
+    sensor_measurement_type: SensorMeasurementType = Field(
+        description="Type of sensor measurement.",
+    )
+    sensor_name: str | None = Field(
+        default=None,
+        description="Name of the sensor (e.g., 'CowManager', 'SCR Heatime').",
+    )
+    sensor_version: str | None = Field(
+        default=None,
+        description="Version of the sensor or software (e.g., 'v2.1').",
+    )
+    value: float = Field(
+        ge=0,
+        description="Measured value. For durations (minutes) or steps depending on measurement type.",
+    )
+    unit: str | None = Field(
+        default=None,
+        description="Optional unit of measurement, e.g., 'min', 'steps'.",
+    )
+    start_time: datetime | None = Field(
+        default=None,
+        description="Start of measurement interval (if applicable).",
+    )
+    end_time: datetime | None = Field(
+        default=None,
+        description="End of measurement interval (if applicable).",
 
 
 class DiseaseDetail(EventDetailModel):
@@ -710,6 +772,8 @@ __all__ = [
     "MilkRecordingDetail",
     "MilkMeterYieldsDetail",
     "FeedIntakeDetail",
+    "DiagnosisSampleDetail",
+    "SensorMeasurementDetail",
     "DiseaseDetail",
     "DiagnosisDetail",
     "TreatmentDetail",

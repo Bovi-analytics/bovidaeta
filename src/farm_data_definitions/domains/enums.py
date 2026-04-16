@@ -15,6 +15,7 @@ class EventType(str, Enum):
 
     - Birth: Cow was born.
     - Breeding: Animal shows heat and is inseminated.
+    - BodyWeightKg: Body weight of the animal is measured (in kg).
     - Calving: Cow gives birth to a calf.
     - Exit: Cow was sold to another farm, died, or was culled.
     - DryOff: Animal is no longer milked until she calves.
@@ -28,6 +29,8 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
+    - PregnancyCheck: Pregnancy check is performed, e.g., by ultrasound or blood test.
+    - SensorMeasurement: Measurement of a trait by a sensor, e.g., rumination time or activity level.
     - BodyWeight: Body weight of the animal measured.
     - BodyConditionScore: Body condition score of the animal measured.
     - LamenessScore: Locomotion or lameness score of the animal recorded.
@@ -39,6 +42,7 @@ class EventType(str, Enum):
 
     BIRTH = "Birth"
     BREEDING = "Breeding"
+    BODY_WEIGHT_KG = "BodyWeightKg"
     CALVING = "Calving"
     EXIT = "Exit"
     DRY_OFF = "DryOff"
@@ -50,6 +54,8 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+    PREGNANCY_CHECK = "PregnancyCheck"
+    SENSOR_MEASUREMENT = "SensorMeasurement"
     BODY_WEIGHT = "BodyWeight"
     BODY_CONDITION_SCORE = "BodyConditionScore"
     LAMENESS_SCORE = "LamenessScore"
@@ -57,6 +63,20 @@ class EventType(str, Enum):
     HERD_ENTRY = "HerdEntry"
     HERD_MOVE = "HerdMove"
     WEANING = "Weaning"
+
+
+class SensorMeasurementType(str, Enum):
+    """
+    Type of sensor measurements.
+    """
+
+    EATING_TIME = "eating_time"
+    RUMINATION_TIME = "rumination_time"
+    LYING_TIME = "lying_time"
+    STANDING_TIME = "standing_time"
+    WALKING_TIME = "walking_time"
+    LEG_ACTIVITY = "leg_activity"
+    METHANE_OUTPUT = "methane_output"
 
 
 class LamenessAffectedLeg(str, Enum):
@@ -117,6 +137,24 @@ class BreedingType(str, Enum):
     NATURAL_SERVICE = "natural_service"
     WITH_BULL = "with_bull"
     EMBRYO_TRANSFER = "embryo_transfer"
+
+
+class DiagnosisSampleType(str, Enum):
+    """
+    Type of samples that collected for diagnosis purpose.
+    """
+
+    MILK_INDIVIDUAL = "milk_individual"
+    MILK_BULK_TANK = "milk_bulk_tank"
+    BLOOD_SERUM = "blood_serum"
+    BLOOD_WHOLE = "blood_whole"
+    FECAL = "fecal"
+    URINE = "urine"
+    EAR_NOTCH = "ear_notch"
+    HAIR = "hair"
+    SWAB_NASAL = "swab_nasal"
+    SWAB_VAGINAL = "swab_vaginal"
+    TISSUE_NECROPSY = "tissue_necropsy"
 
 
 class GenderSorting(str, Enum):
@@ -548,4 +586,3 @@ class TreatmentResponseStatus(str, Enum):
     WORSENED = "worsened"
     RECOVERED = "recovered"
     DIED = "died"
-
