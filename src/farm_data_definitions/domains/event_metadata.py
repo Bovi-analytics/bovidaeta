@@ -20,18 +20,18 @@ from .enums import (
     DepartureReason,
     DepartureType,
     DiagnosisMethod,
+    DiagnosisSampleType,
     DiagnosisSeverity,
     DiagnosisStage,
     DiagnosticSource,
     DiseaseCode,
     GenderSorting,
+    HerdEntryType,
     LamenessAffectedLeg,
     LamenessObservationContext,
-    HerdEntryType,
     ParturitionBirthStatusType,
-    DiagnosisSampleType,
-    SensorMeasurementType,
     RouteOfAdministration,
+    SensorMeasurementType,
     TreatmentFrequency,
     TreatmentResponseStatus,
 )
@@ -42,7 +42,6 @@ class EventMetadataModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-    
 
 class HerdEntryMetadata(EventMetadataModel):
     """
@@ -352,12 +351,13 @@ class BodyWeightMetadata(EventMetadataModel):
 
     Represents the body weight of an animal measured during a session.
     """
+
     body_weight_kg: int | None = Field(
         default=None,
         ge=0,
         description="Body weight of the animal measured, in kg.",
     )
-  
+
 
 class BodyConditionScoreMetadata(EventMetadataModel):
     """
@@ -509,6 +509,7 @@ class SensorMeasurementMetadata(EventMetadataModel):
     end_time: datetime | None = Field(
         default=None,
         description="End of measurement interval (if applicable).",
+    )
 
 
 class DiseaseMetadata(EventMetadataModel):
@@ -557,7 +558,7 @@ class DiseaseMetadata(EventMetadataModel):
     laterality: str | None = Field(
         default=None,
         description=(
-            'Side of the body affected when relevant '
+            "Side of the body affected when relevant "
             '(e.g. "left", "right", "bilateral", "LFQ" for left front quarter).'
         ),
     )
@@ -744,7 +745,7 @@ class TreatmentMetadata(EventMetadataModel):
     treated_by: str | None = Field(
         default=None,
         description=(
-            'Name or role of the person who administered the treatment '
+            "Name or role of the person who administered the treatment "
             '(e.g. "vet", "farm_worker_id:42"). Complements operator_id.'
         ),
     )
