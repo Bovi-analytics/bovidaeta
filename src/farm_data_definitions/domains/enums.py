@@ -27,6 +27,7 @@ class EventType(str, Enum):
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
+    - Weaning: the diet of the calf will no longer contain milk
     """
 
     BIRTH = "Birth"
@@ -42,6 +43,9 @@ class EventType(str, Enum):
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
+    WEANING = "Weaning"
+
+  
 
 class AnimalGender(str, Enum):
     """
