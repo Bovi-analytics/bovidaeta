@@ -23,6 +23,8 @@ from .enums import (
     DiagnosticSource,
     DiseaseCode,
     GenderSorting,
+    LamenessAffectedLeg,
+    LamenessObservationContext,
     HerdEntryType,
     ParturitionBirthStatusType,
     RouteOfAdministration,
@@ -309,6 +311,90 @@ class MilkMeterYieldsDetail(EventDetailModel):
         default=None,
         ge=1,
         description="Session number of milking on that day (1 for first session, 2 for second, etc.).",
+    )
+
+
+class BodyWeightDetail(EventDetailModel):
+    """
+    Body weight event metadata.
+
+    Represents the body weight of an animal measured during a session.
+    """
+    body_weight_kg: int | None = Field(
+        default=None,
+        ge=0,
+        description="Body weight of the animal measured, in kg.",
+    )
+  
+
+class BodyConditionScoreDetail(EventDetailModel):
+    """
+    Body condition score event metadata.
+
+    Represents the body condition score (BCS) of an animal.
+    """
+
+    body_condition_score: float | None = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="Body condition score (BCS) of the animal on a 1-5 scale.",
+    )
+
+
+class LamenessScoreDetail(EventDetailModel):
+    """
+    Lameness score event metadata.
+
+    Represents a locomotion or lameness assessment. Scoring schemes vary by
+    protocol (for example 0-3 or 1-5); the numeric value is stored as recorded.
+    """
+
+    lameness_score: int | None = Field(
+        default=None,
+        ge=0,
+        le=5,
+        description=(
+            "Lameness or locomotion score as recorded (typical scales include "
+            "0-3 or 1-5 depending on the assessment protocol)."
+        ),
+    )
+    affected_leg: LamenessAffectedLeg | None = Field(
+        default=None,
+        description=(
+            "Primarily affected limb when recorded; `not_recorded` when the score "
+            "is not tied to a single leg or the limb was not specified."
+        ),
+    )
+    observation_context: LamenessObservationContext | None = Field(
+        default=None,
+        description="Where or how the animal was observed for this assessment.",
+    )
+
+
+class GenomeTestDetail(EventDetailModel):
+    """
+    Genome test event metadata.
+
+    Represents a genomic test performed for an animal. The actual result payload
+    can be stored externally and referenced here.
+    """
+
+    provider: str | None = Field(
+        default=None,
+        description='Testing provider or lab (for example: "CDC Bovine", "Neogen").',
+    )
+    test_name: str | None = Field(
+        default=None,
+        description='Test or panel name (for example: "CLARIFIDE Plus").',
+    )
+    sample_identifier: str | None = Field(
+        default=None,
+        description="Identifier of the biological sample used for the test (if provided).",
+    )
+    result_uri: str | None = Field(
+        default=None,
+        description="URI/location of the genomic test result file (if stored externally).",
     )
 
 
@@ -616,6 +702,10 @@ __all__ = [
     "BirthDetail",
     "BreedingDetail",
     "CalvingDetail",
+    "BodyWeightDetail",
+    "BodyConditionScoreDetail",
+    "LamenessScoreDetail",
+    "GenomeTestDetail",
     "ExitDetail",
     "MilkRecordingDetail",
     "MilkMeterYieldsDetail",
