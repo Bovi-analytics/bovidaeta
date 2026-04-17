@@ -10,3 +10,4 @@ enumNote
 .DS_Store
 *.sw*
 .env
+*.db
