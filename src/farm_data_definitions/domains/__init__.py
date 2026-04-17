@@ -18,7 +18,7 @@ from .event import Event
 from .event_metadata import (
     BirthMetadata,
     BodyConditionScoreMetadata,
-    BodyWeightMetadata,
+    BodyWeightKgMetadata,
     BreedingMetadata,
     CalvingMetadata,
     EventMetadataModel,

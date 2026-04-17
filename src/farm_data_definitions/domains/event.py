@@ -17,25 +17,24 @@ class Event(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-    event_id: UUID = Field(
+    event_id: UUID | None = Field(
+        default=None,
         description="UUID identifier of the event record.",
     )
     event_type: EventType = Field(
-        description="Mandatory type of the event.",
+        description="Type of the event.",
     )
-    animal_id: UUID = Field(
+    animal_id: UUID | None = Field(
+        default=None,
         description="UUID identifier of the animal this event belongs to.",
     )
-    herd_id: UUID = Field(
-        description="UUID identifier of the herd the animal in this event belongs to."
+    animal_id_source: str = Field(
+        description="Identifier of the animal as per the source system.",
     )
     timestamp: AwareDatetime = Field(
         description="Mandatory date/time of the event.",
     )
-    metadata: dict[str, Any] = Field(
+    metadata: dict[str, Any] | None = Field(
         default_factory=dict,
-        description=(
-            "Event metadata, unique for each event type. The expected shape "
-            "depends on `event_type`."
-        ),
+        description=("Event metadata, unique for each event type."),
     )

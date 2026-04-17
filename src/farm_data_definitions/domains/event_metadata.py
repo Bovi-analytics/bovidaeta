@@ -345,7 +345,7 @@ class MilkMeterYieldsMetadata(EventMetadataModel):
     )
 
 
-class BodyWeightMetadata(EventMetadataModel):
+class BodyWeightKgMetadata(EventMetadataModel):
     """
     Body weight event metadata.
 

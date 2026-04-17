@@ -4,7 +4,7 @@ from .domains import (
     AnimalGender,
     BirthMetadata,
     BodyConditionScoreMetadata,
-    BodyWeightMetadata,
+    BodyWeightKgMetadata,
     Breed,
     BreedingMetadata,
     BreedingType,

@@ -19,25 +19,22 @@ class EventType(str, Enum):
     - Calving: Cow gives birth to a calf.
     - Exit: Cow was sold to another farm, died, or was culled.
     - DryOff: Animal is no longer milked until she calves.
-    - Abortion: Cow loses pregnancy after placentation (>42 days) and before
-      independent viability (260 days).
+    - Abortion: Cow loses pregnancy after placentation (>42 days) and before independent viability (260 days).
     - Heat: Animal shows signs of heat.
     - DNBdecision: Decision is made to not breed the animal.
     - MilkRecording: Milk yield as recorded by a milk recording organization.
-    - MilkMeterYields: Milk production of a single milking measured by milk
-      meter on milk robot or in a milk parlour.
+    - MilkMeterYields: Milk production of a single milking measured by milk meter on milk robot or in a milk parlour.
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
     - PregnancyCheck: Pregnancy check is performed, e.g., by ultrasound or blood test.
     - SensorMeasurement: Measurement of a trait by a sensor, e.g., rumination time or activity level.
-    - BodyWeight: Body weight of the animal measured.
     - BodyConditionScore: Body condition score of the animal measured.
     - LamenessScore: Locomotion or lameness score of the animal recorded.
     - GenomeTest: Genomic testing event for the animal.
     - HerdEntry: Animal enters the herd (born on farm or purchased from an external source).
     - HerdMove: Animal is moved from one location to another within the operation.
-    - Weaning: the diet of the calf will no longer contain milk
+    - Weaning: The diet of the calf will no longer contain milk.
     """
 
     BIRTH = "Birth"
@@ -56,7 +53,6 @@ class EventType(str, Enum):
     TREATMENT = "Treatment"
     PREGNANCY_CHECK = "PregnancyCheck"
     SENSOR_MEASUREMENT = "SensorMeasurement"
-    BODY_WEIGHT = "BodyWeight"
     BODY_CONDITION_SCORE = "BodyConditionScore"
     LAMENESS_SCORE = "LamenessScore"
     GENOME_TEST = "GenomeTest"
