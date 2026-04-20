@@ -31,8 +31,8 @@ class Event(BaseModel):
     animal_id_source: str = Field(
         description="Identifier of the animal as per the source system.",
     )
-    timestamp: AwareDatetime = Field(
-        description="Mandatory date/time of the event.",
+    datetime: AwareDatetime = Field(
+        description="Datetime of the event.",
     )
     metadata: dict[str, Any] | None = Field(
         default_factory=dict,
