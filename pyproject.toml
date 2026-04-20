@@ -12,7 +12,8 @@ dependencies = [
   "pydantic",
   "pytest",
   "polars",
-  "python-dotenv"
+  "python-dotenv",
+  "psycopg[binary]"
 ]
 
 [tool.setuptools]

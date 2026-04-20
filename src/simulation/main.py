@@ -1,21 +1,23 @@
 import json
+import os
 import random
-import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import psycopg
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import farm_data_definitions.enums as enums
 import farm_data_definitions.event_metadata as meta
 from farm_data_definitions import Event, EventType
 
-DB_PATH = "dairy_farm.db"
+load_dotenv()
 
 
 class SimConfig(BaseModel):
     target_herd_size: int = 5000
-    sim_years: int = 3
+    sim_years: int = 1
     gestation_days: int = 280
     days_to_dry_off: int = 60
     voluntary_waiting_period: int = 50
@@ -337,29 +339,33 @@ class Cow:
 
 
 class Farm:
-    def __init__(self, conf: SimConfig, db_path: str = DB_PATH):
+    def __init__(self, conf: SimConfig):
         self.conf = conf
         self.cows = []
-        self.db_conn = sqlite3.connect(db_path)
+        db_uri = os.environ.get("DB_TIMELINE_URI")
+        if not db_uri:
+            raise ValueError("DB_TIMELINE_URI environment variable is required.")
+        self.db_conn = psycopg.connect(db_uri)
         self.setup_db()
         self.initialize_herd()
 
     def setup_db(self):
-        cursor = self.db_conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS Events")
-        cursor.execute("DROP INDEX IF EXISTS idx_animal_id_datetime")
-        cursor.executescript(
-            """CREATE TABLE Events (
-                event_id TEXT PRIMARY KEY,
-                datetime TEXT NOT NULL,
-                event_type TEXT NOT NULL,
-                animal_id TEXT NOT NULL,
-                metadata TEXT NOT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_animal_id_datetime ON Events(datetime, event_type);
-            """
-        )
+        with self.db_conn.cursor() as cursor:
+            cursor.execute("DROP TABLE IF EXISTS Events")
+            cursor.execute("DROP INDEX IF EXISTS idx_animal_id_datetime")
+            cursor.execute(
+                """CREATE TABLE Events (
+                    event_id UUID PRIMARY KEY,
+                    datetime TIMESTAMPTZ NOT NULL,
+                    event_type TEXT NOT NULL,
+                    animal_id TEXT NOT NULL,
+                    metadata JSONB NOT NULL
+                );
+                """
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_animal_id_datetime ON Events(datetime, event_type);"
+            )
         self.db_conn.commit()
 
     def initialize_herd(self):
@@ -380,26 +386,33 @@ class Farm:
     def write_events(self, events: list[Event]):
         if not events:
             return
-        cursor = self.db_conn.cursor()
-        formatted_events = [
-            (
-                str(ev.event_id),
-                ev.datetime.isoformat(),
-                ev.event_type,
-                ev.animal_id_source,
-                json.dumps(
-                    ev.metadata,
-                    default=lambda o: (
-                        o.isoformat() if isinstance(o, datetime) else str(o)
-                    ),
-                ),
+        event_ids = [str(ev.event_id) for ev in events]
+        datetimes = [ev.datetime for ev in events]
+        event_types = [ev.event_type for ev in events]
+        animal_ids = [ev.animal_id_source for ev in events]
+        metadatas = [
+            json.dumps(
+                ev.metadata,
+                default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o),
             )
             for ev in events
         ]
-        cursor.executemany(
-            "INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
-            formatted_events,
-        )
+
+        with self.db_conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata)
+                SELECT * FROM UNNEST(
+                    %s::uuid[], 
+                    %s::timestamptz[], 
+                    %s::text[], 
+                    %s::text[], 
+                    %s::jsonb[]
+                )
+                """,
+                (event_ids, datetimes, event_types, animal_ids, metadatas),
+            )
+        self.db_conn.commit()
 
     def run_simulation(self):
         current_date = datetime.now(timezone.utc).replace(
@@ -471,9 +484,9 @@ class Farm:
 
         self.db_conn.commit()
 
-        cursor = self.db_conn.cursor()
-        cursor.execute("SELECT count(*) FROM Events")
-        print(f"Simulation complete. Generated {cursor.fetchone()[0]:,} events.")
+        with self.db_conn.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM Events")
+            print(f"\nSimulation complete. Generated {cursor.fetchone()[0]:,} events.")
 
 
 if __name__ == "__main__":
