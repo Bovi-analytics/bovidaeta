@@ -49,6 +49,7 @@ from .event_metadata import (
     TreatmentMetadata,
 )
 from .herd import Herd
+from .io.loader import FarmEventData
 
 __version__ = "0.1.0"
 
@@ -84,6 +85,7 @@ __all__ = [
     "EventType",
     "ExitMetadata",
     "FeedIntakeMetadata",
+    "FarmEventData",
     "GenomeTestMetadata",
     "GenderSorting",
     "Herd",
