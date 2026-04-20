@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 from pydantic import BaseModel
 
-import farm_data_definitions.domains.enums as enums
-import farm_data_definitions.domains.event_metadata as meta
-from farm_data_definitions import Event, EventType
+import models.enums as enums
+import models.event_metadata as meta
+from models import Event, EventType
 
 DB_PATH = "dairy_farm.db"
 

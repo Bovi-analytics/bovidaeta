@@ -766,7 +766,7 @@ __all__ = [
     "BirthMetadata",
     "BreedingMetadata",
     "CalvingMetadata",
-    "BodyWeightMetadata",
+    "BodyWeightKgMetadata",
     "BodyConditionScoreMetadata",
     "LamenessScoreMetadata",
     "GenomeTestMetadata",

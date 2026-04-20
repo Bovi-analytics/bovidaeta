@@ -7,8 +7,7 @@ import inspect
 import pytest
 from pydantic import BaseModel
 
-import farm_data_definitions as fdd
-
+import models as fdd
 
 PUBLIC_MODEL_NAMES = sorted(
     name
