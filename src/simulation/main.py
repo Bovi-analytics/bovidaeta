@@ -52,7 +52,7 @@ class Cow:
 
     def create_event(
         self,
-        date: datetime,
+        dts: datetime,
         event_type: EventType,
         animal_id: str = "",
         metadata: dict = {},
@@ -62,7 +62,7 @@ class Cow:
             event_id=event_id,
             event_type=event_type,
             animal_id_source=animal_id or self.id,
-            timestamp=date,
+            datetime=dts,
             metadata=metadata,
         )
 
@@ -374,7 +374,7 @@ class Farm:
         formatted_events = [
             (
                 str(ev.event_id),
-                ev.timestamp.isoformat(),
+                ev.datetime.isoformat(),
                 ev.animal_id,
                 ev.event_type,
                 json.dumps(

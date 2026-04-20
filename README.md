@@ -39,7 +39,7 @@ event = Event(
     event_id=uuid4(),
     event_type=EventType.BIRTH,
     animal_id=cow_id,
-    timestamp=datetime.now(timezone.utc),
+    datetime=datetime.now(timezone.utc),
 )
 
 # Typed metadata payload + direct Event construction.
@@ -48,7 +48,7 @@ birth_event = Event(
     event_id=uuid4(),
     event_type=EventType.BIRTH,
     animal_id=cow_id,
-    timestamp=datetime.now(timezone.utc),
+    datetime=datetime.now(timezone.utc),
     metadata=birth_metadata.model_dump(exclude_none=False),
 )
 ```
@@ -57,7 +57,7 @@ birth_event = Event(
 
 - `Cow`: Animal identity, pedigree, and lifecycle record.
 - `Herd`: Herd identity and location metadata.
-- `Event`: Timeline event envelope with `event_type`, `timestamp`, and `metadata`.
+- `Event`: Timeline event envelope with `event_type`, `datetime`, and `metadata`.
 - `Event metadata models`: Typed metadata contracts for constructing `Event.metadata` payloads.
 - `Lactation`: Pending (not yet implemented/exported).
 
