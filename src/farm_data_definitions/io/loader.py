@@ -1,19 +1,17 @@
 import os
-import sqlite3
 from datetime import datetime
 from typing import Iterable, Optional
 
 import polars as pl
+import psycopg
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 class FarmEventData:
-    def __init__(self, db_path: Optional[str] = None):
-        if not db_path:
-            db_path = os.environ["DB_PATH"]
-        self.db_uri = f"file:{db_path}?mode=ro"
+    def __init__(self):
+        self.db_uri = os.environ["DB_TIMELINE_URI"]
 
     def load(
         self,
@@ -28,7 +26,7 @@ class FarmEventData:
 
         if subset_metadata:
             for key in subset_metadata:
-                select_cols.append(f"metadata ->> '$.{key}' AS {key}")
+                select_cols.append(f"metadata ->> '{key}' AS {key}")
         else:
             select_cols.append("metadata")
 
@@ -36,30 +34,31 @@ class FarmEventData:
         conditions = []
         params = []
 
-        # Build dynamic WHERE clauses
         if dts_start:
-            conditions.append("datetime >= ?")
-            params.append(dts_start.isoformat())
+            conditions.append("datetime >= %s")
+            params.append(dts_start)
 
         if dts_end:
-            conditions.append("datetime <= ?")
-            params.append(dts_end.isoformat())
+            conditions.append("datetime <= %s")
+            params.append(dts_end)
 
         if subset_events:
             events_tuple = tuple(subset_events)
-            conditions.append(f"event_type IN ({','.join(['?'] * len(events_tuple))})")
+            conditions.append(f"event_type IN ({','.join(['%s'] * len(events_tuple))})")
             params.extend(events_tuple)
 
         if subset_cows:
             cows_tuple = tuple(subset_cows)
-            conditions.append(f"animal_id IN ({','.join(['?'] * len(cows_tuple))})")
+            conditions.append(f"animal_id IN ({','.join(['%s'] * len(cows_tuple))})")
             params.extend(cows_tuple)
 
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
 
-        with sqlite3.connect(self.db_uri, uri=True) as conn:
+        # Connect using psycopg3 and enforce read-only
+        with psycopg.connect(self.db_uri) as conn:
+            conn.read_only = True
             df = pl.read_database(
-                query=query, connection=conn, execute_options={"parameters": params}
+                query=query, connection=conn, execute_options={"params": params}
             )
             return df.lazy()
