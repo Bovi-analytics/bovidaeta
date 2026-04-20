@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 from pydantic import BaseModel
 
-import models.enums as enums
-import models.event_metadata as meta
-from models import Event, EventType
+import farm_data_definitions.enums as enums
+import farm_data_definitions.event_metadata as meta
+from farm_data_definitions import Event, EventType
 
 DB_PATH = "dairy_farm.db"
 
@@ -347,8 +347,18 @@ class Farm:
     def setup_db(self):
         cursor = self.db_conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS Events")
-        cursor.execute(
-            "CREATE TABLE Events (event_id TEXT, datetime TEXT, animal_id TEXT, event_type TEXT, metadata TEXT)"
+        cursor.execute("DROP INDEX IF EXISTS idx_animal_id_datetime")
+        cursor.executescript(
+            """CREATE TABLE Events (
+                event_id TEXT PRIMARY KEY,
+                datetime TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                animal_id TEXT NOT NULL,
+                metadata TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_animal_id_datetime ON Events(datetime, event_type);
+            """
         )
         self.db_conn.commit()
 
@@ -375,8 +385,8 @@ class Farm:
             (
                 str(ev.event_id),
                 ev.datetime.isoformat(),
-                ev.animal_id,
                 ev.event_type,
+                ev.animal_id_source,
                 json.dumps(
                     ev.metadata,
                     default=lambda o: (
@@ -387,7 +397,8 @@ class Farm:
             for ev in events
         ]
         cursor.executemany(
-            "INSERT INTO Events VALUES (?, ?, ?, ?, ?)", formatted_events
+            "INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
+            formatted_events,
         )
 
     def run_simulation(self):
