@@ -10,7 +10,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "pydantic",
-  "pytest"
+  "pytest",
+  "polars",
+  "python-dotenv"
 ]
 
 [tool.setuptools]
