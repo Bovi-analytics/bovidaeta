@@ -1,11 +1,17 @@
 # farm-data-definitions
 
-Canonical farm data definitions used by the Bovi-Analytics Lab.
+Farm data definitions used by the Bovi-Analytics Lab.
 
 ## Install
 
 ```bash
 pip install -e .
+```
+
+Or add to a `uv` project with:
+
+```bash
+uv add /path/to/farm-data-definitions
 ```
 
 ## Quick Start
