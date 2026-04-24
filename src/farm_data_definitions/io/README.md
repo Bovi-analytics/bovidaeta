@@ -1,21 +1,21 @@
 # Working with events data
 
-When you have an SQLite file containing a timeline of events, you can use the `EventData` class to get a DataFrame of the data.
+When you have an hive partition containing a timeline of events, you can use the `EventData` class to get a DataFrame of the data.
 
 ```python
-from datetime import datetime
+from datetime import datetime, timezone
 
 from farm_data_definitions import FarmEventData
 
-fed = FarmEventData("timeline.db")
+fed = FarmEventData()
 
 # Define subsets of data that we want to load
 # These are all optional!
 events = ["MilkMeterYields"]
 metadata_features = ["milking_yield"]
 cows_of_interest = ["9abeb415", "e96e5263"]
-dts_start = datetime.fromisoformat("2026-04-20")
-dts_end = datetime.fromisoformat("2026-07-20")
+dts_start = datetime.fromisoformat("2026-04-20").replace(tzinfo=timezone.utc)
+dts_end = datetime.fromisoformat("2026-07-20").replace(tzinfo=timezone.utc)
 
 lazy_df = fed.load(
     dts_start=dts_start,

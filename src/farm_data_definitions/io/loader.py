@@ -1,17 +1,14 @@
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Iterable, Optional
 
 import polars as pl
-import psycopg
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class FarmEventData:
     def __init__(self):
-        self.db_uri = os.environ["DB_TIMELINE_URI"]
+        self.data_dir = Path.home() / "nsf-data"
 
     def load(
         self,
@@ -22,43 +19,48 @@ class FarmEventData:
         subset_cows: Optional[Iterable[str]] = None,
     ) -> pl.LazyFrame:
 
-        select_cols = ["event_id", "animal_id", "event_type", "datetime"]
+        lf = pl.scan_parquet(
+            os.path.join(self.data_dir, "**/*.parquet"), hive_partitioning=True
+        )
+        lf = lf.with_columns(pl.col("datetime").str.to_datetime(time_zone="UTC"))
+
+        if dts_start:
+            # Prune directories
+            prune_start = (pl.col("year") > dts_start.year) | (
+                (pl.col("year") == dts_start.year)
+                & (pl.col("month") >= dts_start.month)
+            )
+            lf = lf.filter(prune_start)
+            # Exact datetime filter
+            lf = lf.filter(pl.col("datetime") >= dts_start)
+
+        if dts_end:
+            # Prune directories
+            prune_end = (pl.col("year") < dts_end.year) | (
+                (pl.col("year") == dts_end.year) & (pl.col("month") <= dts_end.month)
+            )
+            lf = lf.filter(prune_end)
+            # Exact datetime filter
+            lf = lf.filter(pl.col("datetime") <= dts_end)
+
+        if subset_events:
+            lf = lf.filter(pl.col("event_type").is_in(list(subset_events)))
+
+        if subset_cows:
+            lf = lf.filter(pl.col("animal_id").is_in(list(subset_cows)))
+
+        select_cols = [
+            pl.col("event_id"),
+            pl.col("animal_id"),
+            pl.col("event_type"),
+            pl.col("datetime"),
+        ]
 
         if subset_metadata:
             for key in subset_metadata:
-                select_cols.append(f"metadata ->> '{key}' AS {key}")
+                expr = pl.col("metadata").struct.field(key).alias(key)
+                select_cols.append(expr)
         else:
-            select_cols.append("metadata")
+            select_cols.append(pl.col("metadata"))
 
-        query = f"SELECT {', '.join(select_cols)} FROM Events"
-        conditions = []
-        params = []
-
-        if dts_start:
-            conditions.append("datetime >= %s")
-            params.append(dts_start)
-
-        if dts_end:
-            conditions.append("datetime <= %s")
-            params.append(dts_end)
-
-        if subset_events:
-            events_tuple = tuple(subset_events)
-            conditions.append(f"event_type IN ({','.join(['%s'] * len(events_tuple))})")
-            params.extend(events_tuple)
-
-        if subset_cows:
-            cows_tuple = tuple(subset_cows)
-            conditions.append(f"animal_id IN ({','.join(['%s'] * len(cows_tuple))})")
-            params.extend(cows_tuple)
-
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-
-        # Connect using psycopg3 and enforce read-only
-        with psycopg.connect(self.db_uri) as conn:
-            conn.read_only = True
-            df = pl.read_database(
-                query=query, connection=conn, execute_options={"params": params}
-            )
-            return df.lazy()
+        return lf.select(select_cols)
