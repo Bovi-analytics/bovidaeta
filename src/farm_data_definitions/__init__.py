@@ -28,6 +28,7 @@ from .enums import (
 )
 from .event import Event
 from .event_metadata import (
+    ALL_METADATA,
     BirthMetadata,
     BodyConditionScoreMetadata,
     BodyWeightKgMetadata,
@@ -101,4 +102,5 @@ __all__ = [
     "SensorMeasurementType",
     "TreatmentFrequency",
     "TreatmentResponseStatus",
+    "ALL_METADATA",
 ]

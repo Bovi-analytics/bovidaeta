@@ -780,3 +780,5 @@ __all__ = [
     "DiagnosisMetadata",
     "TreatmentMetadata",
 ]
+
+ALL_METADATA = [globals()[name] for name in __all__]
