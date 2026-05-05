@@ -22,7 +22,7 @@ class FarmEventData:
         lf = pl.scan_parquet(
             os.path.join(self.data_dir, "**/*.parquet"), hive_partitioning=True
         )
-        lf = lf.with_columns(pl.col("datetime").str.to_datetime(time_zone="UTC"))
+        lf = lf.with_columns(pl.col("datetime").cast(pl.Datetime(time_zone="UTC")))
 
         if dts_start:
             # Prune directories
