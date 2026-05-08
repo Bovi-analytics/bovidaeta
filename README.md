@@ -14,6 +14,12 @@ Or add to a `uv` project with:
 uv add /path/to/farm-data-definitions
 ```
 
+After making local changes to the library, update the installation in a `uv` project with:
+
+```bash
+uv pip install /path/to/farm-data-definitions --reinstall
+```
+
 ## Quick Start
 
 ```python
