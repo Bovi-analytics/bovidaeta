@@ -7,11 +7,12 @@ name = "farm-data-definitions"
 version = "0.1.0"
 description = "Farm data models and event definitions by Bovi Analytics."
 readme = "README.md"
-requires-python = "==3.12"
+requires-python = "==3.12.*"
 dependencies = [
   "pydantic",
   "pytest",
-  "polars"
+  "polars",
+  "pyarrow",
 ]
 
 [tool.setuptools]

@@ -1,53 +1,50 @@
-import os
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional
-
-import polars as pl
 
 
 class FarmEventData:
-    def __init__(self):
-        self.data_dir = Path.home() / "nsf-data"
+    def __init__(self, data_dir="/data/parquet"):
+        self.data_dir = Path(data_dir)
 
     def load(
         self,
-        dts_start: Optional[datetime] = None,
-        dts_end: Optional[datetime] = None,
-        subset_events: Optional[Iterable[str]] = None,
-        subset_metadata: Optional[Iterable[str]] = None,
-        subset_cows: Optional[Iterable[str]] = None,
-    ) -> pl.LazyFrame:
+        dts_start: datetime | None = None,
+        dts_end: datetime | None = None,
+        subset_events: Iterable[str] | None = None,
+        subset_metadata: Iterable[str] | None = None,
+        subset_cows: Iterable[str] | None = None,
+    ) -> "pl.DataFrame":
 
-        lf = pl.scan_parquet(
-            os.path.join(self.data_dir, "**/*.parquet"), hive_partitioning=True
-        )
-        lf = lf.with_columns(pl.col("datetime").cast(pl.Datetime(time_zone="UTC")))
+        import polars as pl
+        import pyarrow.compute as pc
+        import pyarrow.dataset as ds
 
+        dataset = ds.dataset(self.data_dir, format="parquet", partitioning="hive")
+
+        filters = []
         if dts_start:
-            # Prune directories
-            prune_start = (pl.col("year") > dts_start.year) | (
-                (pl.col("year") == dts_start.year)
-                & (pl.col("month") >= dts_start.month)
-            )
-            lf = lf.filter(prune_start)
-            # Exact datetime filter
-            lf = lf.filter(pl.col("datetime") >= dts_start)
-
+            filters.append(pc.field("datetime") >= dts_start)
         if dts_end:
-            # Prune directories
-            prune_end = (pl.col("year") < dts_end.year) | (
-                (pl.col("year") == dts_end.year) & (pl.col("month") <= dts_end.month)
-            )
-            lf = lf.filter(prune_end)
-            # Exact datetime filter
-            lf = lf.filter(pl.col("datetime") <= dts_end)
-
+            filters.append(pc.field("datetime") <= dts_end)
         if subset_events:
-            lf = lf.filter(pl.col("event_type").is_in(list(subset_events)))
-
+            filters.append(pc.field("event_type").isin(list(subset_events)))
         if subset_cows:
-            lf = lf.filter(pl.col("animal_id").is_in(list(subset_cows)))
+            filters.append(pc.field("animal_id").isin(list(subset_cows)))
+
+        combined_filter = None
+        if filters:
+            combined_filter = filters[0]
+            for f in filters[1:]:
+                combined_filter = combined_filter & f
+
+        base_cols = ["event_id", "animal_id", "event_type", "datetime", "metadata"]
+
+        table = dataset.to_table(columns=base_cols, filter=combined_filter)
+
+        df = pl.DataFrame(table)
+
+        df = df.with_columns(pl.col("datetime").cast(pl.Datetime(time_zone="UTC")))
 
         select_cols = [
             pl.col("event_id"),
@@ -63,4 +60,4 @@ class FarmEventData:
         else:
             select_cols.append(pl.col("metadata"))
 
-        return lf.select(select_cols)
+        return df.select(select_cols)
