@@ -3,7 +3,8 @@ Enumerations used in the farm domain model.
 
 This module describes parameters that need extra definition, including sex of
 animal, breeding type, gender sorting, calving ease, birth status, departure
-type/reason, breed codes, event types, and lameness assessment facets.
+type/reason, breed codes, event types, genomic sample source, and lameness
+assessment facets.
 """
 
 from enum import Enum
@@ -108,6 +109,20 @@ class LamenessObservationContext(str, Enum):
     FREE_LOCOMOTION = "free_locomotion"
     HOLDING_PEN = "holding_pen"
     UNKNOWN = "unknown"
+
+
+class GenomicSampleSource(str, Enum):
+    """
+    Tissue or DNA source used for genomic testing.
+
+    Values follow CDCB accepted genotype SampleSheet `Sample_Source` values.
+    """
+
+    HAIR = "hair"
+    BLOOD = "blood"
+    SEMEN = "semen"
+    TISSUE = "tissue"
+    NASAL = "nasal"
 
 
 class AnimalGender(str, Enum):
