@@ -575,24 +575,6 @@ class DiagnosisMetadata(EventMetadataModel):
         default=None,
         description="Who or what made the diagnosis (vet, farm worker, sensor, lab).",
     )
-    diagnosed_by: str | None = Field(
-        default=None,
-        description=(
-            "Name or identifier of the specific person who made the diagnosis. "
-            'Complements diagnostic_source (e.g. "Dr. Smith", "farm_worker_id:42").'
-        ),
-    )
-    detection_time: datetime | None = Field(
-        default=None,
-        description=(
-            "Exact date/time the condition was detected. May differ from the event "
-            "timestamp if there was a recording delay."
-        ),
-    )
-    follow_up_date: date | None = Field(
-        default=None,
-        description="Recommended calendar date for a follow-up check (format: YYYY-MM-DD).",
-    )
     notes: str | None = Field(
         default=None,
         description="Additional free-text clinical notes from the diagnosing party.",
