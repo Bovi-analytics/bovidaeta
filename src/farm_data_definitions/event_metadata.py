@@ -531,7 +531,7 @@ class DiseaseMetadata(EventMetadataModel):
         default=None,
         description=(
             "Free-text description of the condition. Required when disease_code is OTH; "
-            'optional extra detail otherwise (e.g. "Left front quarter mastitis").'
+            'optional extra detail otherwise (e.g. "Left front quarter mastitis, right displacement of the abomasum ").'
         ),
     )
     stage: DiagnosisStage | None = Field(
