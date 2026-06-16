@@ -541,41 +541,6 @@ class DiseaseMetadata(EventMetadataModel):
             "Reference: https://github.com/adewg/ICAR/blob/ADE-1/enums/icarDiagnosisStageType.json"
         ),
     )
-    affected_system: str | None = Field(
-        default=None,
-        description=(
-            'Body system primarily affected (e.g. "udder", "metabolic", '
-            '"reproductive", "respiratory", "locomotion").'
-        ),
-    )
-    body_part: str | None = Field(
-        default=None,
-        description=(
-            'Specific anatomical location (e.g. "left front quarter", '
-            '"right hind hoof", "uterus").'
-        ),
-    )
-    laterality: str | None = Field(
-        default=None,
-        description=(
-            "Side of the body affected when relevant "
-            '(e.g. "left", "right", "bilateral", "LFQ" for left front quarter).'
-        ),
-    )
-    onset_time: datetime | None = Field(
-        default=None,
-        description=(
-            "Estimated date/time when the condition first started. "
-            "May be earlier than detection_time in DiagnosisMetadata."
-        ),
-    )
-    recurrence: bool | None = Field(
-        default=None,
-        description=(
-            "True if this is a recurring episode of the same condition in this "
-            "lactation; False if it is the first occurrence."
-        ),
-    )
 
 
 class DiagnosisMetadata(EventMetadataModel):
