@@ -32,7 +32,6 @@ from .enums import (
     ParturitionBirthStatusType,
     RouteOfAdministration,
     SensorMeasurementType,
-    TreatmentFrequency,
     TreatmentResponseStatus,
 )
 
