@@ -578,17 +578,6 @@ class RouteOfAdministration(str, Enum):
     OTHER = "other"
 
 
-class TreatmentFrequency(str, Enum):
-    """How often a drug application is repeated within a treatment course."""
-
-    ONCE = "once"
-    TWICE_DAILY = "twice_daily"
-    DAILY = "daily"
-    EVERY_OTHER_DAY = "every_other_day"
-    WEEKLY = "weekly"
-    OTHER = "other"
-
-
 class TreatmentResponseStatus(str, Enum):
     """Observed animal response at end of or after a treatment course."""
 
