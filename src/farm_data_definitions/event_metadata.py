@@ -598,36 +598,7 @@ class TreatmentMetadata(EventMetadataModel):
         ),
     )
 
-    # --- Course tracking ---
-    treatment_course_id: int | None = Field(
-        default=None,
-        gt=0,
-        description=(
-            "Shared identifier grouping all Treatment events in the same course, "
-            "assigned by the source system."
-        ),
-    )
-    application_number: int | None = Field(
-        default=None,
-        ge=1,
-        description="Sequence of this application within its course (1 = first, 2 = second, …).",
-    )
-    total_applications: int | None = Field(
-        default=None,
-        ge=1,
-        description="Total number of applications planned for the full treatment course.",
-    )
-    frequency: TreatmentFrequency | None = Field(
-        default=None,
-        description="How often the drug is applied within the course.",
-    )
-
     # --- Drug ---
-    drug_id: int | None = Field(
-        default=None,
-        gt=0,
-        description="Identifier of the drug as registered in the farm or veterinary system.",
-    )
     drug_name: str | None = Field(
         default=None,
         description='Commercial or generic name of the drug (e.g. "Penicillin G", "Metacam").',
@@ -646,20 +617,6 @@ class TreatmentMetadata(EventMetadataModel):
         description="Route by which the drug was administered.",
     )
 
-    # --- Timing ---
-    treatment_start_time: datetime | None = Field(
-        default=None,
-        description="Date/time this specific application started.",
-    )
-    treatment_end_time: datetime | None = Field(
-        default=None,
-        description="Date/time this specific application ended.",
-    )
-    course_end_date: date | None = Field(
-        default=None,
-        description="Calendar date the full treatment course is expected to end (format: YYYY-MM-DD).",
-    )
-
     # --- Regulatory ---
     milk_withdrawal_days: int | None = Field(
         default=None,
@@ -673,27 +630,6 @@ class TreatmentMetadata(EventMetadataModel):
         ge=0,
         description=(
             "Days before this animal may enter the food chain after the last application."
-        ),
-    )
-    prescription_id: str | None = Field(
-        default=None,
-        description=(
-            "Veterinary prescription reference number. Required in many jurisdictions "
-            "for prescription-only medicines."
-        ),
-    )
-
-    # --- Operator & outcome ---
-    operator_id: int | None = Field(
-        default=None,
-        gt=0,
-        description="Numeric identifier of the person who administered the treatment.",
-    )
-    treated_by: str | None = Field(
-        default=None,
-        description=(
-            "Name or role of the person who administered the treatment "
-            '(e.g. "vet", "farm_worker_id:42"). Complements operator_id.'
         ),
     )
     response_status: TreatmentResponseStatus | None = Field(
