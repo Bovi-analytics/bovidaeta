@@ -24,7 +24,6 @@ from .enums import (
     ParturitionBirthStatusType,
     RouteOfAdministration,
     SensorMeasurementType,
-    TreatmentFrequency,
     TreatmentResponseStatus,
 )
 from .event import Event
@@ -102,7 +101,6 @@ __all__ = [
     "TreatmentMetadata",
     "RouteOfAdministration",
     "SensorMeasurementType",
-    "TreatmentFrequency",
     "TreatmentResponseStatus",
     "ALL_METADATA",
 ]
