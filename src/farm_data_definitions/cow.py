@@ -6,7 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import AnimalGender, Breed
-from .event import Event
 
 
 class BreedPart(BaseModel):
@@ -71,6 +70,9 @@ class Cow(BaseModel):
             "Day the animal was born as recorded by the farmer, format YYYY-MM-DD, "
             "if available add time."
         ),
+    )
+    exit_date: date | None = Field(
+        description=("Day the animal left the herd."),
     )
     animal_ear_tag: str | None = Field(
         default=None,
@@ -150,7 +152,7 @@ class Cow(BaseModel):
         ),
     )
     breed: list[BreedPart] = Field(
-        default = [BreedPart(breed_code=Breed.HOL, proportion=0.99)],
+        default=[BreedPart(breed_code=Breed.HOL, proportion=0.99)],
         description=(
             "The animal's breed expressed as a list of `BreedPart`. When unknown, "
             "the default is 99% HOL."
@@ -159,8 +161,4 @@ class Cow(BaseModel):
     born_on_farm: bool | None = Field(
         default=None,
         description="Boolean indicating if the animal was born on the herd linked to the herd identifier.",
-    )
-    timeline_events: list[Event] = Field(
-        default_factory=list,
-        description="List of all events belonging to the cow.",
     )
