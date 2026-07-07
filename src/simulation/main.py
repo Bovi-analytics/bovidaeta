@@ -10,7 +10,8 @@ import farm_data_definitions.event_metadata as meta
 from farm_data_definitions import Event, EventType
 from pydantic import BaseModel
 
-DB_PATH = Path.home() / "nsf-data/dairy_farm.db"
+DATA_DIR = Path.home() / "nsf-data/"
+DB_PATH = DATA_DIR / "dairy_farm.db"
 
 
 class SimConfig(BaseModel):
