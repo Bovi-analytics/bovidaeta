@@ -1,63 +1,65 @@
+import sqlite3
 from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
+import polars as pl
 
-class FarmEventData:
-    def __init__(self, data_dir="/data/parquet"):
-        self.data_dir = Path(data_dir)
+from ..enums import EventType
 
-    def load(
+
+class FarmData:
+    def __init__(self, db_path="/data/dairy_farm.db"):
+        self.db_path = Path(db_path)
+
+    def load_events(
         self,
         dts_start: datetime | None = None,
         dts_end: datetime | None = None,
-        subset_events: Iterable[str] | None = None,
+        subset_events: Iterable[EventType | str] | None = None,
         subset_metadata: Iterable[str] | None = None,
         subset_cows: Iterable[str] | None = None,
-    ) -> "pl.DataFrame":
+    ) -> pl.DataFrame:
 
-        import polars as pl
-        import pyarrow.compute as pc
-        import pyarrow.dataset as ds
-
-        dataset = ds.dataset(self.data_dir, format="parquet", partitioning="hive")
-
-        filters = []
-        if dts_start:
-            filters.append(pc.field("datetime") >= dts_start)
-        if dts_end:
-            filters.append(pc.field("datetime") <= dts_end)
-        if subset_events:
-            filters.append(pc.field("event_type").isin(list(subset_events)))
-        if subset_cows:
-            filters.append(pc.field("animal_id").isin(list(subset_cows)))
-
-        combined_filter = None
-        if filters:
-            combined_filter = filters[0]
-            for f in filters[1:]:
-                combined_filter = combined_filter & f
-
-        base_cols = ["event_id", "animal_id", "event_type", "datetime", "metadata"]
-
-        table = dataset.to_table(columns=base_cols, filter=combined_filter)
-
-        df = pl.DataFrame(table)
-
-        df = df.with_columns(pl.col("datetime").cast(pl.Datetime(time_zone="UTC")))
-
-        select_cols = [
-            pl.col("event_id"),
-            pl.col("animal_id"),
-            pl.col("event_type"),
-            pl.col("datetime"),
-        ]
-
+        select_cols = ["event_id", "animal_id", "event_type", "datetime"]
         if subset_metadata:
             for key in subset_metadata:
-                expr = pl.col("metadata").struct.field(key).alias(key)
-                select_cols.append(expr)
+                select_cols.append(f"json_extract(metadata, '$.{key}') AS {key}")
         else:
-            select_cols.append(pl.col("metadata"))
+            select_cols.append("metadata")
 
-        return df.select(select_cols)
+        query = f"SELECT {', '.join(select_cols)} FROM events"
+
+        conditions = []
+        params = []
+
+        if dts_start:
+            conditions.append("datetime >= ?")
+            params.append(dts_start.isoformat(sep=" "))
+
+        if dts_end:
+            conditions.append("datetime <= ?")
+            params.append(dts_end.isoformat(sep=" "))
+
+        if subset_events:
+            events_list = [e.value if isinstance(e, EventType) else e for e in subset_events]
+            placeholders = ", ".join(["?"] * len(events_list))
+            conditions.append(f"event_type IN ({placeholders})")
+            params.extend(events_list)
+
+        if subset_cows:
+            cows_list = list(subset_cows)
+            placeholders = ", ".join(["?"] * len(cows_list))
+            conditions.append(f"animal_id IN ({placeholders})")
+            params.extend(cows_list)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("PRAGMA busy_timeout = 5000;")
+            df = pl.read_database(
+                query=query, connection=conn, execute_options={"parameters": params}
+            )
+
+            return df
