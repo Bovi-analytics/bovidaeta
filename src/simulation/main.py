@@ -14,7 +14,7 @@ DB_PATH = Path.home() / "nsf-data/dairy_farm.db"
 
 
 class SimConfig(BaseModel):
-    target_herd_size: int = 100
+    target_herd_size: int = 200
     sim_years: float = 10
     gestation_days: int = 280
     days_to_dry_off: int = 60
@@ -38,17 +38,48 @@ class SimCow:
     def __init__(
         self,
         age_days: int,
+        herd_id: str = "",
         is_milking: bool = False,
         days_in_milk: int = 0,
         days_pregnant: int = 0,
+        sire_ear_tag: str | None = None,
+        birth_date: str | None = None,
+        born_on_farm: bool | None = None,
+        exit_date: str | None = None,
     ):
-        self.id = str(uuid.uuid4())[:8]
+        self.id = str(uuid.uuid4())
+        self.herd_id = herd_id
         self.age_days = age_days
         self.is_milking = is_milking
         self.days_in_milk = days_in_milk
         self.days_pregnant = days_pregnant
         self.in_herd = True
         self.is_dnb = age_days >= SimConfig().dnb_age_threshold
+        self.sire_ear_tag = sire_ear_tag or str(uuid.uuid4())
+        self.birth_date = birth_date
+        self.born_on_farm = born_on_farm
+        self.exit_date = exit_date
+
+        # Randomised static metadata (unrealistic values are fine for simulation)
+        self.gender = random.choices(["female", "male"], weights=[95, 5])[0]
+        self.animal_farm_number = random.randint(1, 9999)
+        self.animal_ear_tag = f"NL {random.randint(100_000_000, 999_999_999)}"
+        self.animal_legal_id = self.animal_ear_tag  # mirrors EU convention
+        # Breed: mostly pure HOL, occasionally crossed with JER or MRY
+        self.breed = random.choices(
+            [
+                [{"breed_code": "HOL", "proportion": 1.0}],
+                [
+                    {"breed_code": "HOL", "proportion": 0.75},
+                    {"breed_code": "JER", "proportion": 0.25},
+                ],
+                [
+                    {"breed_code": "HOL", "proportion": 0.5},
+                    {"breed_code": "MRY", "proportion": 0.5},
+                ],
+            ],
+            weights=[80, 15, 5],
+        )[0]
 
     def create_event(
         self,
@@ -310,23 +341,106 @@ class SimCow:
 class Farm:
     def __init__(self, conf: SimConfig, db_path: Path | str = DB_PATH):
         self.conf = conf
+        self.herd_id = str(uuid.uuid4())
         self.cows = []
         self.db_conn = sqlite3.connect(db_path)
-        self.setup_db()
-        self.initialize_herd()
+
+        choice = input(
+            f"Do you want to delete existing data in:\n- {DB_PATH}\n\n"
+            "Enter 'y' (yes) or 'n' (no) or 'c' (cancel): "
+        )
+        self.sim_cancelled = False
+        if "c" in choice:
+            self.sim_cancelled = True
+        elif "y" in choice:
+            self.setup_db()
+
+        if not self.sim_cancelled:
+            self.initialize_herd()
 
     def setup_db(self):
         cursor = self.db_conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS Events")
+        cursor.execute("DROP TABLE IF EXISTS Cows")
         cursor.executescript(
-            """CREATE TABLE Events (
+            """
+            CREATE TABLE Events (
                 event_id TEXT PRIMARY KEY,
                 datetime TEXT NOT NULL,
                 event_type TEXT NOT NULL,
                 animal_id TEXT NOT NULL,
                 metadata TEXT NOT NULL
             );
+
+            CREATE TABLE Cows (
+                animal_id    TEXT PRIMARY KEY,
+                herd_id      TEXT NOT NULL,
+                sire_ear_tag TEXT,
+                metadata     TEXT NOT NULL
+            );
+
+            CREATE INDEX idx_events_type_dts ON events (event_type, datetime);
+            CREATE INDEX idx_events_animal_dts ON events(animal_id, datetime);
             """
+        )
+        self.db_conn.commit()
+
+    def write_cow(self, cow: "SimCow"):
+        """Upsert a cow row. Called on entry to the sim and again on exit to set exit_date."""
+        metadata = json.dumps(
+            {
+                "birth_date": cow.birth_date,
+                "born_on_farm": cow.born_on_farm,
+                "exit_date": cow.exit_date,
+                "gender": cow.gender,
+                "animal_farm_number": cow.animal_farm_number,
+                "animal_ear_tag": cow.animal_ear_tag,
+                "animal_legal_id": cow.animal_legal_id,
+                "breed": cow.breed,
+            }
+        )
+        cursor = self.db_conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(animal_id) DO UPDATE SET
+                metadata = excluded.metadata
+            """,
+            (cow.id, cow.herd_id, cow.sire_ear_tag, metadata),
+        )
+
+    def _batch_write_cows(self, cows: list["SimCow"]):
+        """Batch upsert of multiple cow rows — used on initialization and daily flush."""
+        rows = [
+            (
+                cow.id,
+                cow.herd_id,
+                cow.sire_ear_tag,
+                json.dumps(
+                    {
+                        "birth_date": cow.birth_date,
+                        "born_on_farm": cow.born_on_farm,
+                        "exit_date": cow.exit_date,
+                        "gender": cow.gender,
+                        "animal_farm_number": cow.animal_farm_number,
+                        "animal_ear_tag": cow.animal_ear_tag,
+                        "animal_legal_id": cow.animal_legal_id,
+                        "breed": cow.breed,
+                    }
+                ),
+            )
+            for cow in cows
+        ]
+        cursor = self.db_conn.cursor()
+        cursor.executemany(
+            """
+            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(animal_id) DO UPDATE SET
+                metadata = excluded.metadata
+            """,
+            rows,
         )
         self.db_conn.commit()
 
@@ -336,14 +450,16 @@ class Farm:
             is_milking = random.choice([True, False])
             dim = random.randint(1, 305) if is_milking else 0
             dcc = random.randint(0, 200)
-            self.cows.append(
-                SimCow(
-                    age_days=age,
-                    is_milking=is_milking,
-                    days_in_milk=dim,
-                    days_pregnant=dcc,
-                )
+            cow = SimCow(
+                age_days=age,
+                herd_id=self.herd_id,
+                is_milking=is_milking,
+                days_in_milk=dim,
+                days_pregnant=dcc,
+                born_on_farm=False,  # pre-existing herd: origin unknown
             )
+            self.cows.append(cow)
+        self._batch_write_cows(self.cows)
 
     def write_events(self, events: list[Event]):
         if not events:
@@ -378,17 +494,25 @@ class Farm:
         while current_date < end_date:
             print(f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r")
             daily_events = []
+            dirty_cows: list[SimCow] = []  # cows whose Cows row needs updating today
 
             # Process all active cows
             active_cows = [c for c in self.cows if c.in_herd]
             for cow in active_cows:
                 c_events, new_calves = cow.process_day(self.conf, current_date)
                 daily_events.extend(c_events)
+                for calf in new_calves:
+                    calf.herd_id = self.herd_id
+                    calf.birth_date = current_date.date().isoformat()
+                    calf.born_on_farm = True
+                    dirty_cows.append(calf)
                 self.cows.extend(new_calves)
 
                 # Base culling logic
                 if random.random() < self.conf.daily_base_cull_prob:
                     cow.in_herd = False
+                    cow.exit_date = current_date.date().isoformat()
+                    dirty_cows.append(cow)
                     daily_events.append(cow.create_event(current_date, EventType.EXIT))
 
             # Herd Size Orchestration
@@ -398,10 +522,13 @@ class Farm:
                 for _ in range(self.conf.target_herd_size - current_size):
                     new_cow = SimCow(
                         age_days=random.randint(730, 1000),
+                        herd_id=self.herd_id,
                         is_milking=True,
                         days_in_milk=10,
+                        born_on_farm=False,
                     )
                     self.cows.append(new_cow)
+                    dirty_cows.append(new_cow)
                     purchase_meta = meta.HerdEntryMetadata(
                         entry_type=meta.HerdEntryType.PURCHASED,
                         entry_date=current_date.date(),
@@ -422,9 +549,13 @@ class Farm:
                 active_cows.sort(key=lambda x: (not x.is_dnb, x.age_days), reverse=True)
                 for cow in active_cows[:excess]:
                     cow.in_herd = False
+                    cow.exit_date = current_date.date().isoformat()
+                    dirty_cows.append(cow)
                     daily_events.append(cow.create_event(current_date, EventType.EXIT))
 
             self.write_events(daily_events)
+            if dirty_cows:
+                self._batch_write_cows(dirty_cows)
             current_date += timedelta(days=1)
             date_i += 1
 
@@ -436,4 +567,6 @@ class Farm:
 
 
 if __name__ == "__main__":
-    Farm(SimConfig()).run_simulation()
+    farm = Farm(SimConfig())
+    if not farm.sim_cancelled:
+        farm.run_simulation()
