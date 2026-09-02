@@ -2,13 +2,13 @@ import json
 import random
 import sqlite3
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import farm_data_definitions.enums as enums
-import farm_data_definitions.event_metadata as meta
-from farm_data_definitions import Event, EventType
 from pydantic import BaseModel
+
+import farm_data_definitions.event_metadata as meta
+from farm_data_definitions import Event, EventType, enums
 
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
@@ -445,6 +445,64 @@ class Farm:
         )
         self.db_conn.commit()
 
+    def write_cow(self, cow: "SimCow"):
+        """Upsert a cow row. Called on entry to the sim and again on exit to set exit_date."""
+        metadata = json.dumps(
+            {
+                "birth_date": cow.birth_date,
+                "born_on_farm": cow.born_on_farm,
+                "exit_date": cow.exit_date,
+                "gender": cow.gender,
+                "animal_farm_number": cow.animal_farm_number,
+                "animal_ear_tag": cow.animal_ear_tag,
+                "animal_legal_id": cow.animal_legal_id,
+                "breed": cow.breed,
+            }
+        )
+        cursor = self.db_conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(animal_id) DO UPDATE SET
+                metadata = excluded.metadata
+            """,
+            (cow.id, cow.herd_id, cow.sire_ear_tag, metadata),
+        )
+
+    def _batch_write_cows(self, cows: list["SimCow"]):
+        """Batch upsert of multiple cow rows — used on initialization and daily flush."""
+        rows = [
+            (
+                cow.id,
+                cow.herd_id,
+                cow.sire_ear_tag,
+                json.dumps(
+                    {
+                        "birth_date": cow.birth_date,
+                        "born_on_farm": cow.born_on_farm,
+                        "exit_date": cow.exit_date,
+                        "gender": cow.gender,
+                        "animal_farm_number": cow.animal_farm_number,
+                        "animal_ear_tag": cow.animal_ear_tag,
+                        "animal_legal_id": cow.animal_legal_id,
+                        "breed": cow.breed,
+                    }
+                ),
+            )
+            for cow in cows
+        ]
+        cursor = self.db_conn.cursor()
+        cursor.executemany(
+            """
+            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(animal_id) DO UPDATE SET
+                metadata = excluded.metadata
+            """,
+            rows,
+        )
+
     def initialize_herd(self):
         for _ in range(self.conf.target_herd_size):
             age = random.randint(730, 2500)
@@ -461,6 +519,7 @@ class Farm:
             )
             self.cows.append(cow)
         self._batch_write_cows(self.cows)
+        self.db_conn.commit()
 
     def write_events(self, events: list[Event]):
         if not events:
@@ -483,17 +542,20 @@ class Farm:
             "INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
             formatted_events,
         )
-        self.db_conn.commit()
 
     def run_simulation(self):
-        current_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_date = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = current_date + timedelta(days=int(self.conf.sim_years * 365))
         date_i = 1
 
         print(f"Starting simulation from {current_date.date()} to {end_date.date()}...")
 
         while current_date < end_date:
-            print(f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r")
+            print(
+                f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r", flush=True
+            )
             daily_events = []
             dirty_cows: list[SimCow] = []  # cows whose Cows row needs updating today
 
@@ -559,6 +621,9 @@ class Farm:
                 self._batch_write_cows(dirty_cows)
             current_date += timedelta(days=1)
             date_i += 1
+
+            if date_i % 30 == 0:
+                self.db_conn.commit()
 
         self.db_conn.commit()
 
