@@ -74,9 +74,3 @@ birth_event = Event(
 - `Event`: Timeline event envelope with `event_type`, `datetime`, and `metadata`.
 - `Event metadata models`: Typed metadata contracts for constructing `Event.metadata` payloads.
 - `Lactation`: Pending (not yet implemented/exported).
-
-## Notes
-
-- Canonical import path is `farm_data_definitions`.
-- Data model field names are snake_case.
-- `Lactation` is intentionally pending while requirements are finalized.

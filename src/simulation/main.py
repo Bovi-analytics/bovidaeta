@@ -445,31 +445,6 @@ class Farm:
         )
         self.db_conn.commit()
 
-    def write_cow(self, cow: "SimCow"):
-        """Upsert a cow row. Called on entry to the sim and again on exit to set exit_date."""
-        metadata = json.dumps(
-            {
-                "birth_date": cow.birth_date,
-                "born_on_farm": cow.born_on_farm,
-                "exit_date": cow.exit_date,
-                "gender": cow.gender,
-                "animal_farm_number": cow.animal_farm_number,
-                "animal_ear_tag": cow.animal_ear_tag,
-                "animal_legal_id": cow.animal_legal_id,
-                "breed": cow.breed,
-            }
-        )
-        cursor = self.db_conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(animal_id) DO UPDATE SET
-                metadata = excluded.metadata
-            """,
-            (cow.id, cow.herd_id, cow.sire_ear_tag, metadata),
-        )
-
     def _batch_write_cows(self, cows: list["SimCow"]):
         """Batch upsert of multiple cow rows — used on initialization and daily flush."""
         rows = [

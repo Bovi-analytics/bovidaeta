@@ -9,5 +9,6 @@ build/
 enumNote
 .DS_Store
 *.sw*
-.env
+.env/
+.venv/
 *.db
