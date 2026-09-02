@@ -2,13 +2,13 @@ import json
 import random
 import sqlite3
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import farm_data_definitions.enums as enums
-import farm_data_definitions.event_metadata as meta
-from farm_data_definitions import Event, EventType
 from pydantic import BaseModel
+
+import farm_data_definitions.event_metadata as meta
+from farm_data_definitions import Event, EventType, enums
 
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
@@ -131,7 +131,9 @@ class SimCow:
                 result_uri=f"s3://dairy-farm-results/genomes/{self.id}.pdf",
             ).model_dump()
             events.append(
-                self.create_event(current_date, EventType.GENOME_TEST, metadata=genome_meta)
+                self.create_event(
+                    current_date, EventType.GENOME_TEST, metadata=genome_meta
+                )
             )
         elif self.age_days == config.weaning_age:
             events.append(self.create_event(current_date, EventType.WEANING))
@@ -143,12 +145,16 @@ class SimCow:
         # 2. Monthly Evaluations
         if self.age_days > 365 and self.age_days % 30 == 0:
             lameness_meta = meta.LamenessScoreMetadata(
-                lameness_score=random.choices([0, 1, 2, 3, 4, 5], weights=[70, 15, 8, 4, 2, 1])[0],
+                lameness_score=random.choices(
+                    [0, 1, 2, 3, 4, 5], weights=[70, 15, 8, 4, 2, 1]
+                )[0],
                 affected_leg=None,
                 observation_context=None,
             ).model_dump()
             events.append(
-                self.create_event(current_date, EventType.LAMENESS_SCORE, metadata=lameness_meta)
+                self.create_event(
+                    current_date, EventType.LAMENESS_SCORE, metadata=lameness_meta
+                )
             )
 
         # 3. Probabilistic Health Events
@@ -159,13 +165,18 @@ class SimCow:
         # 4. Reproduction Cycle
         if self.days_pregnant > 0:
             # Check for abortion (days 42 to 260)
-            if 42 < self.days_pregnant < 260 and random.random() < config.daily_abortion_prob:
+            if (
+                42 < self.days_pregnant < 260
+                and random.random() < config.daily_abortion_prob
+            ):
                 self.days_pregnant = 0
                 events.append(self.create_event(current_date, EventType.ABORTION))
             else:
                 self.days_pregnant += 1
 
-                if self.days_pregnant == (config.gestation_days - config.days_to_dry_off):
+                if self.days_pregnant == (
+                    config.gestation_days - config.days_to_dry_off
+                ):
                     self.is_milking = False
                     events.append(self.create_event(current_date, EventType.DRY_OFF))
 
@@ -191,7 +202,9 @@ class SimCow:
                     ).model_dump()
 
                     events.append(
-                        self.create_event(current_date, EventType.CALVING, metadata=calving_meta)
+                        self.create_event(
+                            current_date, EventType.CALVING, metadata=calving_meta
+                        )
                     )
 
                     # 50% chance of a female calf entering the herd
@@ -238,7 +251,9 @@ class SimCow:
                 events.append(self.create_event(current_date, EventType.HEAT))
                 breeding_meta = meta.BreedingMetadata(
                     bull_id=uuid.uuid4(),
-                    bull_name=random.choice(["SuperSire", "Crimson", "Renegade", "Doc"]),
+                    bull_name=random.choice(
+                        ["SuperSire", "Crimson", "Renegade", "Doc"]
+                    ),
                     insemination_number=random.randint(1, 3),
                     breeding_type=enums.BreedingType.ARTIFICIAL_INSEMINATION,
                     gender_sorted=random.choices(
@@ -250,13 +265,17 @@ class SimCow:
                     )[0],
                 ).model_dump()
                 events.append(
-                    self.create_event(current_date, EventType.BREEDING, metadata=breeding_meta)
+                    self.create_event(
+                        current_date, EventType.BREEDING, metadata=breeding_meta
+                    )
                 )
 
                 if random.random() < config.conception_rate:
                     self.days_pregnant = 1
                     check_date = current_date + timedelta(days=35)
-                    events.append(self.create_event(check_date, EventType.PREGNANCY_CHECK))
+                    events.append(
+                        self.create_event(check_date, EventType.PREGNANCY_CHECK)
+                    )
 
         # 5. High-Frequency Daily Events (Milking & Feeding)
         if self.is_milking:
@@ -284,13 +303,17 @@ class SimCow:
                     milking_session=session_num,
                 ).model_dump()
                 events.append(
-                    self.create_event(start_time, EventType.MILK_METER_YIELDS, metadata=milk_meta)
+                    self.create_event(
+                        start_time, EventType.MILK_METER_YIELDS, metadata=milk_meta
+                    )
                 )
 
             # Primary feeds 30 mins after milking
             feed_base_hours = [h + 0.5 for h in config.milking_times]
 
-            feed_times = self._get_times(current_date, feed_base_hours, config.feeding_duration)
+            feed_times = self._get_times(
+                current_date, feed_base_hours, config.feeding_duration
+            )
 
             for session_num, start_time in enumerate(feed_times, start=1):
                 duration_mins = random.randint(10, 30)
@@ -308,14 +331,18 @@ class SimCow:
                     end_time=start_time + timedelta(minutes=duration_mins),
                 ).model_dump()
                 events.append(
-                    self.create_event(start_time, EventType.FEED_INTAKE, metadata=feed_meta)
+                    self.create_event(
+                        start_time, EventType.FEED_INTAKE, metadata=feed_meta
+                    )
                 )
 
         else:
             # Feed Intake for dry cows / youngstock (2-3x day)
             feed_base_hours = [h + 0.5 for h in config.milking_times]
 
-            feed_times = self._get_times(current_date, feed_base_hours, config.feeding_duration)
+            feed_times = self._get_times(
+                current_date, feed_base_hours, config.feeding_duration
+            )
 
             for session_num, start_time in enumerate(feed_times, start=1):
                 duration_mins = random.randint(15, 40)
@@ -333,7 +360,9 @@ class SimCow:
                     end_time=start_time + timedelta(minutes=duration_mins),
                 ).model_dump()
                 events.append(
-                    self.create_event(start_time, EventType.FEED_INTAKE, metadata=feed_meta)
+                    self.create_event(
+                        start_time, EventType.FEED_INTAKE, metadata=feed_meta
+                    )
                 )
 
         return events, new_calves
@@ -443,7 +472,6 @@ class Farm:
             """,
             rows,
         )
-        self.db_conn.commit()
 
     def initialize_herd(self):
         for _ in range(self.conf.target_herd_size):
@@ -461,6 +489,7 @@ class Farm:
             )
             self.cows.append(cow)
         self._batch_write_cows(self.cows)
+        self.db_conn.commit()
 
     def write_events(self, events: list[Event]):
         if not events:
@@ -474,7 +503,9 @@ class Farm:
                 ev.animal_id_source,
                 json.dumps(
                     ev.metadata,
-                    default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o),
+                    default=lambda o: (
+                        o.isoformat() if isinstance(o, datetime) else str(o)
+                    ),
                 ),
             )
             for ev in events
@@ -483,17 +514,20 @@ class Farm:
             "INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
             formatted_events,
         )
-        self.db_conn.commit()
 
     def run_simulation(self):
-        current_date = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_date = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = current_date + timedelta(days=int(self.conf.sim_years * 365))
         date_i = 1
 
         print(f"Starting simulation from {current_date.date()} to {end_date.date()}...")
 
         while current_date < end_date:
-            print(f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r")
+            print(
+                f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r", flush=True
+            )
             daily_events = []
             dirty_cows: list[SimCow] = []  # cows whose Cows row needs updating today
 
@@ -519,7 +553,9 @@ class Farm:
             # Herd Size Orchestration
             current_size = len([c for c in self.cows if c.in_herd])
 
-            if current_size < int(self.conf.target_herd_size * (1 - self.conf.herd_variation_p)):
+            if current_size < int(
+                self.conf.target_herd_size * (1 - self.conf.herd_variation_p)
+            ):
                 for _ in range(self.conf.target_herd_size - current_size):
                     new_cow = SimCow(
                         age_days=random.randint(730, 1000),
@@ -534,7 +570,9 @@ class Farm:
                         entry_type=meta.HerdEntryType.PURCHASED,
                         entry_date=current_date.date(),
                         age_at_entry=new_cow.age_days,
-                        source_farm=random.choice(["Green Acres", "Valley Farms", "Sunny Ridge"]),
+                        source_farm=random.choice(
+                            ["Green Acres", "Valley Farms", "Sunny Ridge"]
+                        ),
                         purchase_price=round(random.uniform(1500.0, 2500.0), 2),
                         purchase_currency="USD",
                     ).model_dump()
@@ -544,7 +582,9 @@ class Farm:
                         )
                     )
 
-            elif current_size > int(self.conf.target_herd_size * (1 + self.conf.herd_variation_p)):
+            elif current_size > int(
+                self.conf.target_herd_size * (1 + self.conf.herd_variation_p)
+            ):
                 excess = current_size - self.conf.target_herd_size
                 # Cull priority: DNB cows first, then oldest
                 active_cows.sort(key=lambda x: (not x.is_dnb, x.age_days), reverse=True)
@@ -559,6 +599,9 @@ class Farm:
                 self._batch_write_cows(dirty_cows)
             current_date += timedelta(days=1)
             date_i += 1
+
+            if date_i % 30 == 0:
+                self.db_conn.commit()
 
         self.db_conn.commit()
 
