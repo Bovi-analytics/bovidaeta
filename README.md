@@ -1,6 +1,8 @@
-# farm-data-definitions
+<img src="assets/badge.svg" alt="Logo" width="200">
 
-Farm data definitions used by the Bovi-Analytics Lab.
+# bovidaeta
+
+Farm and cattle domain definitions created by the [Bovi-Analytics Lab](https://bovi-analytics.org/).
 
 ## Install
 
@@ -11,13 +13,13 @@ pip install -e .
 Or add to a `uv` project with:
 
 ```bash
-uv add /path/to/farm-data-definitions
+uv add /path/to/bovidaeta
 ```
 
 After making local changes to the library, update the installation in a `uv` project with:
 
 ```bash
-uv pip install /path/to/farm-data-definitions --reinstall
+uv pip install /path/to/bovidaeta --reinstall
 ```
 
 ## Quick Start
@@ -26,7 +28,7 @@ uv pip install /path/to/farm-data-definitions --reinstall
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from farm_data_definitions import (
+from bovidaeta import (
     AnimalGender,
     BirthMetadata,
     Cow,

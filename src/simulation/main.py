@@ -7,8 +7,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-import farm_data_definitions.event_metadata as meta
-from farm_data_definitions import Event, EventType, enums
+import bovidaeta.event_metadata as meta
+from bovidaeta import Event, EventType, enums
 
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
