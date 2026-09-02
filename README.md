@@ -1,6 +1,6 @@
 <img src="assets/badge.svg" alt="Logo" width="200">
 
-# bovidaeta
+# bovidae-ta
 
 Farm and cattle domain definitions created by the [Bovi-Analytics Lab](https://bovi-analytics.org/).
 
@@ -13,13 +13,13 @@ pip install -e .
 Or add to a `uv` project with:
 
 ```bash
-uv add /path/to/bovidaeta
+uv add /path/to/bovidae-ta
 ```
 
 After making local changes to the library, update the installation in a `uv` project with:
 
 ```bash
-uv pip install /path/to/bovidaeta --reinstall
+uv pip install /path/to/bovidae-ta --reinstall
 ```
 
 ## Quick Start
