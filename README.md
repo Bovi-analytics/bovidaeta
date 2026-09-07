@@ -22,7 +22,9 @@ After making local changes to the library, update the installation in a `uv` pro
 uv pip install /path/to/bovidae-ta --reinstall
 ```
 
-## Quick Start
+## Quick Start - Data Models
+
+Find the exact data model specifications in [src/bovidaeta/](src/bovidaeta/) (`cow.py`, `enums.py`, `event_metadata.py`, etc.)
 
 ```python
 from datetime import datetime, timezone
@@ -67,6 +69,35 @@ birth_event = Event(
 )
 ```
 
+## Quick Start - Loading data
+
+Events are stored two ways, depending on whether you're developing locally or in Databricks. One class can be used to read the data, without ever needing SQL:
+
+```python
+from bovidaeta import DairyData, EventType
+
+# On a farm or locally: one farm's SQLite database.
+data = DairyData.from_sqlite("dairy_farm.db")
+# In Databricks: multiple farms in Unity Catalog.
+data = DairyData.from_delta("cornell_catalog.cornell_schema")
+
+# Load event data - use filters! See src/bovidaeta/io/README.md
+df = data.load_events(subset_events=[EventType.MILK_RECORDING])
+```
+
+`load_events()` has the same arguments either way, but the **return type is different**:
+`from_sqlite` gives a polars `DataFrame` and `from_delta` gives a Spark one,
+because these are most suitable for local/cloud development respectively.
+If you want to switch between these environments, you will need more changes
+besides swapping the constructor!
+
+`from_delta` needs Spark: already present inside a Databricks notebook,
+otherwise `pip install 'bovidaeta[delta]'`.
+
+See [`src/bovidaeta/io/README.md`](src/bovidaeta/io/README.md) for the
+filters and the places the two stores differ, and [`examples/`](examples)
+for runnable walkthroughs of each.
+
 ## Repository layout
 
 ```
@@ -79,36 +110,6 @@ examples/        runnable walkthroughs, one per backend
 pipelines/       SQLite -> Delta load job
 ```
 
-## Loading data
-
-`DairyData` is the only loader. The same events are stored two ways, and
-one class reads both:
-
-```python
-from bovidaeta import DairyData, EventType
-
-# On a farm: one farm's SQLite database, on a local edge device.
-data = DairyData.from_sqlite("dairy_farm.db")
-
-# In Databricks: every farm, in Unity Catalog, for research.
-data = DairyData.from_delta("cornell_catalog.cornell_schema")
-
-# Identical from here on.
-df = data.load_events(subset_events=[EventType.MILK_RECORDING])
-```
-
-The arguments are the same either way. The **return type is not**:
-`from_sqlite` gives a polars `DataFrame`, `from_delta` a Spark one,
-because that is what each environment wants to work in. Swapping the
-constructor starts a port of an analysis script rather than finishing it.
-
-`from_delta` needs Spark: already present inside a Databricks notebook,
-otherwise `pip install 'bovidaeta[delta]'`.
-
-See [`src/bovidaeta/io/README.md`](src/bovidaeta/io/README.md) for the
-filters and the places the two stores differ, and [`examples/`](examples)
-for runnable walkthroughs of each.
-
 ## Building a wheel
 
 To install the library on a Databricks cluster, build a wheel and upload
@@ -117,7 +118,7 @@ it to a Unity Catalog volume:
 ```bash
 uv build --wheel          # -> dist/bovidaeta-0.1.0-py3-none-any.whl
 databricks fs cp dist/bovidaeta-0.1.0-py3-none-any.whl \
-    dbfs:/Volumes/cornell_catalog/cornell_schema/libs/
+    dbfs:/Volumes/cornell_catalog/cornell_schema/libs/ # Or upload manually
 ```
 
 Then, in the notebook:
@@ -127,14 +128,5 @@ Then, in the notebook:
 %restart_python
 ```
 
-Bump `version` in `pyproject.toml` when you re-upload — pip will not
-reinstall over a version it already has, so an unchanged version number
-leaves the cluster running the old code.
-
-## Model Reference
-
-- `Cow`: Animal identity, pedigree, and lifecycle record.
-- `Herd`: Herd identity and location metadata.
-- `Event`: Timeline event envelope with `event_type`, `datetime`, and `metadata`.
-- `Event metadata models`: Typed metadata contracts for constructing `Event.metadata` payloads.
-- `Lactation`: Pending (not yet implemented/exported).
+Bump `version` in `pyproject.toml` when you re-upload, as pip will not
+reinstall over a version it already has.
