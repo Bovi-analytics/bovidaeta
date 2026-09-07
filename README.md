@@ -67,6 +67,70 @@ birth_event = Event(
 )
 ```
 
+## Repository layout
+
+```
+src/bovidaeta/
+├── cow.py, herd.py, event.py, event_metadata.py, enums.py   domain models
+├── io/          DairyData, and one backend per store
+├── schemas/     the DDL for both backends, shipped with the package
+└── simulation/  generates a dummy farm database to work against
+examples/        runnable walkthroughs, one per backend
+pipelines/       SQLite -> Delta load job
+```
+
+## Loading data
+
+`DairyData` is the only loader. The same events are stored two ways, and
+one class reads both:
+
+```python
+from bovidaeta import DairyData, EventType
+
+# On a farm: one farm's SQLite database, on a local edge device.
+data = DairyData.from_sqlite("dairy_farm.db")
+
+# In Databricks: every farm, in Unity Catalog, for research.
+data = DairyData.from_delta("cornell_catalog.cornell_schema")
+
+# Identical from here on.
+df = data.load_events(subset_events=[EventType.MILK_RECORDING])
+```
+
+The arguments are the same either way. The **return type is not**:
+`from_sqlite` gives a polars `DataFrame`, `from_delta` a Spark one,
+because that is what each environment wants to work in. Swapping the
+constructor starts a port of an analysis script rather than finishing it.
+
+`from_delta` needs Spark: already present inside a Databricks notebook,
+otherwise `pip install 'bovidaeta[delta]'`.
+
+See [`src/bovidaeta/io/README.md`](src/bovidaeta/io/README.md) for the
+filters and the places the two stores differ, and [`examples/`](examples)
+for runnable walkthroughs of each.
+
+## Building a wheel
+
+To install the library on a Databricks cluster, build a wheel and upload
+it to a Unity Catalog volume:
+
+```bash
+uv build --wheel          # -> dist/bovidaeta-0.1.0-py3-none-any.whl
+databricks fs cp dist/bovidaeta-0.1.0-py3-none-any.whl \
+    dbfs:/Volumes/cornell_catalog/cornell_schema/libs/
+```
+
+Then, in the notebook:
+
+```python
+%pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.0-py3-none-any.whl
+%restart_python
+```
+
+Bump `version` in `pyproject.toml` when you re-upload — pip will not
+reinstall over a version it already has, so an unchanged version number
+leaves the cluster running the old code.
+
 ## Model Reference
 
 - `Cow`: Animal identity, pedigree, and lifecycle record.

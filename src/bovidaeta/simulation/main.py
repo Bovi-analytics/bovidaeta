@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 import bovidaeta.event_metadata as meta
 from bovidaeta import Event, EventType, enums
+from bovidaeta.schemas import SQLITE_SCHEMA, read_schema
 
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
@@ -389,30 +390,15 @@ class Farm:
             self.initialize_herd()
 
     def setup_db(self):
+        """(Re)create the tables from the bundled `schemas/sqlite.sql`."""
         cursor = self.db_conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS Events")
         cursor.execute("DROP TABLE IF EXISTS Cows")
-        cursor.executescript(
-            """
-            CREATE TABLE Events (
-                event_id TEXT PRIMARY KEY,
-                datetime TEXT NOT NULL,
-                event_type TEXT NOT NULL,
-                animal_id TEXT NOT NULL,
-                metadata TEXT NOT NULL
-            );
-
-            CREATE TABLE Cows (
-                animal_id    TEXT PRIMARY KEY,
-                herd_id      TEXT NOT NULL,
-                sire_ear_tag TEXT,
-                metadata     TEXT NOT NULL
-            );
-
-            CREATE INDEX idx_events_type_dts ON events (event_type, datetime);
-            CREATE INDEX idx_events_animal_dts ON events(animal_id, datetime);
-            """
-        )
+        cursor.execute("DROP TABLE IF EXISTS Herds")
+        cursor.executescript(read_schema(SQLITE_SCHEMA))
+        # NOTE: the Herds table is created but left empty - the simulator
+        # does not yet emit a herd row, so `DairyData.load_herds()` returns
+        # nothing against simulated data. Real farm exports populate it.
         self.db_conn.commit()
 
     def write_cow(self, cow: "SimCow"):

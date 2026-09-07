@@ -50,7 +50,7 @@ from .event_metadata import (
     TreatmentMetadata,
 )
 from .herd import Herd
-from .io.loader import FarmData
+from .io import DairyData
 
 __version__ = "0.1.0"
 
@@ -102,5 +102,14 @@ __all__ = [
     "RouteOfAdministration",
     "SensorMeasurementType",
     "TreatmentResponseStatus",
-    "ALL_METADATA",
+    "to_polars",
 ]
+
+
+def __getattr__(name: str):
+    """Expose `to_polars` lazily; it needs pyspark, the rest of the package does not."""
+    if name == "to_polars":
+        from .io import to_polars
+
+        return to_polars
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

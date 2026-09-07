@@ -14,8 +14,18 @@ dependencies = [
   "pyarrow",
 ]
 
+# The Delta loader needs Spark. It is optional so that an edge device
+# running only the SQLite path does not have to install pyspark; inside a
+# Databricks notebook Spark is already present and this extra is not
+# needed either.
+#[project.optional-dependencies]
+#delta = ["pyspark>=3.5"]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+bovidaeta = ["schemas/*.sql"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
