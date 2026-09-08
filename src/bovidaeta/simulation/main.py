@@ -460,39 +460,6 @@ class Farm:
         )
         self.db_conn.commit()
 
-    def _batch_write_cows(self, cows: list["SimCow"]):
-        """Batch upsert of multiple cow rows — used on initialization and daily flush."""
-        rows = [
-            (
-                cow.id,
-                cow.herd_id,
-                cow.sire_ear_tag,
-                json.dumps(
-                    {
-                        "birth_date": cow.birth_date,
-                        "born_on_farm": cow.born_on_farm,
-                        "exit_date": cow.exit_date,
-                        "gender": cow.gender,
-                        "animal_farm_number": cow.animal_farm_number,
-                        "animal_ear_tag": cow.animal_ear_tag,
-                        "animal_legal_id": cow.animal_legal_id,
-                        "breed": cow.breed,
-                    }
-                ),
-            )
-            for cow in cows
-        ]
-        cursor = self.db_conn.cursor()
-        cursor.executemany(
-            """
-            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(animal_id) DO UPDATE SET
-                metadata = excluded.metadata
-            """,
-            rows,
-        )
-
     def initialize_herd(self):
         for _ in range(self.conf.target_herd_size):
             age = random.randint(730, 2500)
