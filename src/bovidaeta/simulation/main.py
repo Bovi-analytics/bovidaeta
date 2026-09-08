@@ -1,8 +1,18 @@
+"""Generate a plausible dummy farm database.
+
+Produces the SQLite format described by `bovidaeta/schemas/sqlite.sql`, so
+that `DairyData.from_sqlite` and `examples/sqlite_quickstart.py` can be run
+without a real farm export. The simulation is heavily simplified and not
+optimised for speed. We aim for biological plausibility where possible, but
+results are only intended for testing, not serious analysis.
+"""
+
 import json
+import math
 import random
 import sqlite3
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -18,13 +28,17 @@ DB_PATH = DATA_DIR / "dairy_farm.db"
 class SimConfig(BaseModel):
     target_herd_size: int = 200
     sim_years: float = 10
+    sim_end_date: date | None = None
     gestation_days: int = 280
     days_to_dry_off: int = 60
     voluntary_waiting_period: int = 50
     heifer_breeding_age: int = 400
     heat_cycle_days: int = 21
     conception_rate: float = 0.38
-    daily_disease_prob: float = 0.002
+    # Per-cow daily probability of a clinical case, before that cow's own
+    # susceptibility multiplier is applied. Roughly 0.3 cases/cow/year at
+    # the median.
+    daily_disease_prob: float = 0.0008
     daily_base_cull_prob: float = 0.0008
     daily_abortion_prob: float = 0.0001  # For pregnancies between 42-260 days
     weaning_age: int = 60
@@ -32,8 +46,96 @@ class SimConfig(BaseModel):
     dnb_age_threshold: int = 2920  # ~8 years
     herd_variation_p: float = 0.05
     milking_times: list[int] = [5, 13, 21]
+    peak_yield_mean: float = 38.0
+    peak_yield_sd: float = 6.0
+    mastitis_recovery_days: int = 30
+    mastitis_acute_yield_factor: float = 0.75
+    mastitis_permanent_yield_loss: float = 0.04
     milking_session_duration: float = 1.5  # Hours to milk all cows
     feeding_duration: float = 0.5  # Time to provide feed to all cows
+
+
+def _exit_metadata(cow: "SimCow", reason_hint: str) -> dict:
+    """Departure metadata for a cull.
+
+    `reason_hint` is how the herd logic decided: `"routine"` for the daily
+    background cull, `"capacity"` when the herd is over target and the
+    oldest and do-not-breed cows go first.
+    """
+    if reason_hint == "capacity":
+        reason = (
+            enums.DepartureReason.AGE
+            if cow.is_dnb
+            else enums.DepartureReason.SUPERFLUOUS
+        )
+    elif cow.mastitis_cases >= 3:
+        reason = enums.DepartureReason.MASTITIS
+    else:
+        reason = random.choices(
+            [
+                enums.DepartureReason.FERTILITY,
+                enums.DepartureReason.PRODUCTION,
+                enums.DepartureReason.LEG_OR_CLAW,
+                enums.DepartureReason.HEALTH,
+            ],
+            weights=[35, 30, 20, 15],
+        )[0]
+
+    departure_type = random.choices(
+        [
+            enums.DepartureType.SLAUGHTER,
+            enums.DepartureType.DAIRY_SALE,
+            enums.DepartureType.DEATH,
+        ],
+        weights=[75, 20, 5],
+    )[0]
+    return meta.ExitMetadata(
+        departure_type=departure_type, departure_reason=reason
+    ).model_dump()
+
+
+def _split_yield(day_total: float, n_sessions: int) -> list[float]:
+    """Divide a day's milk over its milking sessions, unevenly.
+
+    Sessions are not equal in practice - the interval since the previous
+    milking differs - so the split is jittered rather than exactly even,
+    while still summing to the day's total.
+    """
+    weights = [random.uniform(0.8, 1.2) for _ in range(n_sessions)]
+    total_weight = sum(weights)
+    return [day_total * w / total_weight for w in weights]
+
+
+DISEASE_DESCRIPTIONS = {
+    enums.DiseaseCode.MAS: "Mastitis",
+    enums.DiseaseCode.KET: "Ketosis",
+    enums.DiseaseCode.RTP: "Retained placenta",
+    enums.DiseaseCode.MFV: "Milk fever",
+}
+
+# Drug, route and milk withdrawal (days) per disease code.
+TREATMENTS = {
+    enums.DiseaseCode.MAS: (
+        "Cephalexin intramammary",
+        enums.RouteOfAdministration.INTRAMAMMARY,
+        4,
+    ),
+    enums.DiseaseCode.KET: (
+        "Propylene glycol",
+        enums.RouteOfAdministration.ORAL,
+        0,
+    ),
+    enums.DiseaseCode.RTP: (
+        "Oxytetracycline",
+        enums.RouteOfAdministration.INTRAUTERINE,
+        5,
+    ),
+    enums.DiseaseCode.MFV: (
+        "Calcium borogluconate",
+        enums.RouteOfAdministration.INTRAVENOUS,
+        2,
+    ),
+}
 
 
 class SimCow:
@@ -62,6 +164,15 @@ class SimCow:
         self.born_on_farm = born_on_farm
         self.exit_date = exit_date
 
+        self.disease_susceptibility = random.lognormvariate(0.0, 1.0)
+
+        conf = SimConfig()
+        self.peak_yield = max(
+            12.0, random.gauss(conf.peak_yield_mean, conf.peak_yield_sd)
+        )
+        self.mastitis_recovery_left = 0  # days of acute yield depression left
+        self.mastitis_cases = 0  # lifetime clinical cases, for permanent loss
+
         # Randomised static metadata (unrealistic values are fine for simulation)
         self.gender = random.choices(["female", "male"], weights=[95, 5])[0]
         self.animal_farm_number = random.randint(1, 9999)
@@ -88,7 +199,7 @@ class SimCow:
         dts: datetime,
         event_type: EventType,
         animal_id: str = "",
-        metadata: dict = {},
+        metadata: dict | None = None,
     ) -> Event:
         event_id = uuid.uuid4()
         return Event(
@@ -96,7 +207,7 @@ class SimCow:
             event_type=event_type,
             animal_id_source=animal_id or self.id,
             datetime=dts,
-            metadata=metadata,
+            metadata=metadata or {},
         )
 
     def _get_times(
@@ -114,6 +225,29 @@ class SimCow:
             times.append(current_date + timedelta(hours=h, minutes=m))
         times.sort()
         return times
+
+    def daily_yield(self, config: SimConfig) -> float:
+        """Expected total kg of milk today, across all milking sessions.
+
+        A coarse stand-in for a lactation curve: yield climbs to a peak
+        around 60 days in milk and then declines steadily, scaled by this
+        cow's own potential and reduced by her mastitis history.
+        """
+        dim = max(1, self.days_in_milk)
+        # Wood's-curve shape, divided by its own maximum (1.896, at ~67
+        # days in milk) so the multiplier peaks at 1.0 and `peak_yield`
+        # is correct.
+        shape = (dim**0.2) * math.exp(-0.003 * dim) / 1.896
+        yield_kg = self.peak_yield * shape
+
+        if self.mastitis_recovery_left > 0:
+            yield_kg *= config.mastitis_acute_yield_factor
+        permanent_loss = min(
+            0.25, self.mastitis_cases * config.mastitis_permanent_yield_loss
+        )
+        yield_kg *= 1.0 - permanent_loss
+
+        return max(2.0, yield_kg * random.uniform(0.92, 1.08))
 
     def process_day(self, config: SimConfig, current_date: datetime):
         if not self.in_herd:
@@ -159,9 +293,90 @@ class SimCow:
             )
 
         # 3. Probabilistic Health Events
-        if random.random() < config.daily_disease_prob:
-            events.append(self.create_event(current_date, EventType.DIAGNOSIS))
-            events.append(self.create_event(current_date, EventType.TREATMENT))
+        if self.mastitis_recovery_left > 0:
+            self.mastitis_recovery_left -= 1
+
+        if random.random() < config.daily_disease_prob * self.disease_susceptibility:
+            # Disease mix follows what the Israel export actually contains:
+            # mastitis dominates, then ketosis, retained placenta and milk
+            # fever. Codes come from the DiseaseCode enum.
+            disease_code = random.choices(
+                [
+                    enums.DiseaseCode.MAS,
+                    enums.DiseaseCode.KET,
+                    enums.DiseaseCode.RTP,
+                    enums.DiseaseCode.MFV,
+                ],
+                weights=[82, 11, 5, 2],
+            )[0]
+
+            if disease_code == enums.DiseaseCode.MAS:
+                self.mastitis_cases += 1
+                self.mastitis_recovery_left = config.mastitis_recovery_days
+
+            severity = random.choices(
+                [
+                    enums.DiagnosisSeverity.LIGHT,
+                    enums.DiagnosisSeverity.MODERATE,
+                    enums.DiagnosisSeverity.SEVERE,
+                ],
+                weights=[55, 35, 10],
+            )[0]
+
+            diagnosis_meta = meta.DiagnosisMetadata(
+                disease=meta.DiseaseMetadata(
+                    disease_code=disease_code,
+                    disease_description=DISEASE_DESCRIPTIONS[disease_code],
+                    stage=enums.DiagnosisStage.ACUTE,
+                ),
+                severity=severity,
+                diagnosis_method=random.choices(
+                    [
+                        enums.DiagnosisMethod.CLINICAL,
+                        enums.DiagnosisMethod.SENSOR_BASED,
+                        enums.DiagnosisMethod.LABORATORY,
+                    ],
+                    weights=[70, 20, 10],
+                )[0],
+                confirmation_status=enums.ConfirmationStatus.CONFIRMED,
+                diagnostic_source=random.choices(
+                    [
+                        enums.DiagnosticSource.FARM_WORKER,
+                        enums.DiagnosticSource.VETERINARIAN,
+                        enums.DiagnosticSource.SENSOR,
+                    ],
+                    weights=[55, 30, 15],
+                )[0],
+            ).model_dump()
+            events.append(
+                self.create_event(
+                    current_date, EventType.DIAGNOSIS, metadata=diagnosis_meta
+                )
+            )
+
+            drug, route, milk_withdrawal = TREATMENTS[disease_code]
+            treatment_meta = meta.TreatmentMetadata(
+                disease_code=disease_code,
+                drug_name=drug,
+                dosage=round(random.uniform(5.0, 20.0), 1),
+                dosage_unit="ml",
+                route_of_administration=route,
+                milk_withdrawal_days=milk_withdrawal,
+                meat_withdrawal_days=milk_withdrawal + 7,
+                response_status=random.choices(
+                    [
+                        enums.TreatmentResponseStatus.RECOVERED,
+                        enums.TreatmentResponseStatus.IMPROVING,
+                        enums.TreatmentResponseStatus.NO_CHANGE,
+                    ],
+                    weights=[75, 20, 5],
+                )[0],
+            ).model_dump()
+            events.append(
+                self.create_event(
+                    current_date, EventType.TREATMENT, metadata=treatment_meta
+                )
+            )
 
         # 4. Reproduction Cycle
         if self.days_pregnant > 0:
@@ -286,9 +501,31 @@ class SimCow:
                 current_date, config.milking_times, config.milking_session_duration
             )
 
+            # One MilkRecording per day summarising the whole day's yield,
+            # alongside the per-session MilkMeterYields below.
+            day_total = self.daily_yield(config)
+            session_yields = _split_yield(day_total, len(milking_times))
+
+            milk_recording_meta = meta.MilkRecordingMetadata(
+                milking_yield=round(day_total, 2),
+                fat_percentage=round(random.gauss(4.15, 0.45), 2),
+                protein_percentage=round(random.gauss(3.45, 0.25), 2),
+                lactose_percentage=round(random.gauss(4.60, 0.15), 2),
+                scc=int(
+                    random.lognormvariate(
+                        13.8 if self.mastitis_recovery_left else 11.9, 0.6
+                    )
+                ),
+            ).model_dump()
+            events.append(
+                self.create_event(
+                    current_date, EventType.MILK_RECORDING, metadata=milk_recording_meta
+                )
+            )
+
             for session_num, start_time in enumerate(milking_times, start=1):
                 duration_mins = random.randint(5, 12)
-                yield_kg = round(random.uniform(8.0, 18.0), 2)
+                yield_kg = round(session_yields[session_num - 1], 2)
                 r_id = random.randint(1, 6)
 
                 milk_meta = meta.MilkMeterYieldsMetadata(
@@ -373,7 +610,10 @@ class Farm:
     def __init__(self, conf: SimConfig, db_path: Path | str = DB_PATH):
         self.conf = conf
         self.herd_id = str(uuid.uuid4())
+        self.source_id = random.randint(100_000, 999_999)
+        self.country_code = "NL"
         self.cows = []
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.db_conn = sqlite3.connect(db_path)
 
         choice = input(
@@ -396,9 +636,24 @@ class Farm:
         cursor.execute("DROP TABLE IF EXISTS Cows")
         cursor.execute("DROP TABLE IF EXISTS Herds")
         cursor.executescript(read_schema(SQLITE_SCHEMA))
-        # NOTE: the Herds table is created but left empty - the simulator
-        # does not yet emit a herd row, so `DairyData.load_herds()` returns
-        # nothing against simulated data. Real farm exports populate it.
+        self.db_conn.commit()
+
+    def write_herd(self):
+        """Insert this farm's single Herds row.
+
+        A farm database describes one herd, so this is one row. It is what
+        `DairyData.load_herds()` reads, and what the SQLite -> Delta
+        pipeline copies into the multi-farm `herds` table.
+        """
+        cursor = self.db_conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO Herds (herd_id, source_id, country_code)
+            VALUES (?, ?, ?)
+            ON CONFLICT(herd_id) DO NOTHING
+            """,
+            (self.herd_id, self.source_id, self.country_code),
+        )
         self.db_conn.commit()
 
     def write_cow(self, cow: "SimCow"):
@@ -461,6 +716,7 @@ class Farm:
         self.db_conn.commit()
 
     def initialize_herd(self):
+        self.write_herd()
         for _ in range(self.conf.target_herd_size):
             age = random.randint(730, 2500)
             is_milking = random.choice([True, False])
@@ -503,10 +759,12 @@ class Farm:
         )
 
     def run_simulation(self):
-        current_date = datetime.now(UTC).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        end_date = current_date + timedelta(days=int(self.conf.sim_years * 365))
+        # Run backwards from the end date so the output is history rather
+        # than a decade of the future: real farm data is historical, and
+        # analyses filter on past years.
+        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
+        end_date = datetime(end_day.year, end_day.month, end_day.day, tzinfo=UTC)
+        current_date = end_date - timedelta(days=int(self.conf.sim_years * 365))
         date_i = 1
 
         print(f"Starting simulation from {current_date.date()} to {end_date.date()}...")
@@ -535,7 +793,13 @@ class Farm:
                     cow.in_herd = False
                     cow.exit_date = current_date.date().isoformat()
                     dirty_cows.append(cow)
-                    daily_events.append(cow.create_event(current_date, EventType.EXIT))
+                    daily_events.append(
+                        cow.create_event(
+                            current_date,
+                            EventType.EXIT,
+                            metadata=_exit_metadata(cow, "routine"),
+                        )
+                    )
 
             # Herd Size Orchestration
             current_size = len([c for c in self.cows if c.in_herd])
@@ -579,7 +843,13 @@ class Farm:
                     cow.in_herd = False
                     cow.exit_date = current_date.date().isoformat()
                     dirty_cows.append(cow)
-                    daily_events.append(cow.create_event(current_date, EventType.EXIT))
+                    daily_events.append(
+                        cow.create_event(
+                            current_date,
+                            EventType.EXIT,
+                            metadata=_exit_metadata(cow, "capacity"),
+                        )
+                    )
 
             self.write_events(daily_events)
             if dirty_cows:
