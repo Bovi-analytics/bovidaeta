@@ -11,6 +11,7 @@
 # MAGIC - Ensure there's a Volume with one or more SQLite databases, one per farm
 # MAGIC - Delta tables are filled: `pipelines/sqlite_to_delta.py`
 # MAGIC - You build the package wheel and upload it your workspace
+# MAGIC - Change the `CATALOG_LOCATION` below
 
 # COMMAND ----------
 
@@ -19,7 +20,8 @@
 
 # COMMAND ----------
 
-dbutils.widgets.text("catalog_schema", "cornell_catalog.cornell_schema")
+CATALOG_LOCATION = "cornell_catalog.cornell_schema"
+dbutils.widgets.text("catalog_schema", CATALOG_LOCATION)
 CATALOG_SCHEMA = dbutils.widgets.get("catalog_schema")
 
 # COMMAND ----------

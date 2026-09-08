@@ -8,6 +8,9 @@
 # Use data from a real farm, or get simulated data with:
 # `python -m bovidaeta.simulation`
 #
+# BEFORE running this script, change the `DATA_PATH` to point to
+# your data.
+#
 # This is a percent-format script: run it top to bottom with
 # `python examples/sqlite_quickstart.py`, or open it as a notebook.
 
@@ -19,7 +22,9 @@ import polars as pl
 
 from bovidaeta import DairyData, EventType
 
-data = DairyData.from_sqlite("dairy_farm.db")
+DATA_PATH = "dairy_farm.db"
+
+data = DairyData.from_sqlite(DATA_PATH)
 print(data)
 
 # %% [markdown]
