@@ -141,7 +141,10 @@ class _DeltaBackend(EventBackend):
         return self.spark.sql(query, args=args)
 
     def load_cows(
-        self, cow_ids: list[str] | None, herd_ids: list[str] | None
+        self,
+        cow_ids: list[str] | None,
+        herd_ids: list[str] | None,
+        sire_ear_tags: list[str] | None,
     ) -> "DataFrame":
         conditions: list[str] = []
         args: dict[str, Any] = {}
@@ -149,6 +152,8 @@ class _DeltaBackend(EventBackend):
             conditions.append(self._in_clause("animal_id", cow_ids, "cow", args))
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, "herd", args))
+        if sire_ear_tags:
+            conditions.append(self._in_clause("sire_ear_tag", sire_ear_tags, "tag", args))
 
         query = f"SELECT * FROM {self._table('cows')}"
         if conditions:

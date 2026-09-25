@@ -142,7 +142,10 @@ class EventBackend(ABC):
 
     @abstractmethod
     def load_cows(
-        self, cow_ids: list[str] | None, herd_ids: list[str] | None
+        self,
+        cow_ids: list[str] | None,
+        herd_ids: list[str] | None,
+        sire_ear_tags: list[str] | None,
     ) -> Any: ...
 
     @abstractmethod

@@ -95,7 +95,10 @@ class _SQLiteBackend(EventBackend):
         return self._query(query, params)
 
     def load_cows(
-        self, cow_ids: list[str] | None, herd_ids: list[str] | None
+        self,
+        cow_ids: list[str] | None,
+        herd_ids: list[str] | None,
+        sire_ear_tags: list[str] | None,
     ) -> pl.DataFrame:
         conditions: list[str] = []
         params: list[str] = []
@@ -103,6 +106,8 @@ class _SQLiteBackend(EventBackend):
             conditions.append(self._in_clause("animal_id", cow_ids, params))
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, params))
+        if sire_ear_tags:
+            conditions.append(self._in_clause("sire_ear_tag", sire_ear_tags, params))
 
         query = "SELECT animal_id, herd_id, sire_ear_tag, metadata FROM Cows"
         if conditions:
