@@ -8,6 +8,7 @@ through `DairyData.from_sqlite(...)`, not used directly.
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 import polars as pl
 
@@ -17,18 +18,61 @@ from .base import BASE_COLUMNS, CAST_TYPES, EventBackend
 class _SQLiteBackend(EventBackend):
     name = "sqlite"
 
-    def __init__(self, db_path: str | Path = "/data/dairy_farm.db"):
+    def __init__(
+        self, db_path: str | Path = "/data/dairy_farm.db", immutable: bool = False
+    ):
         self.db_path = Path(db_path)
+        self.immutable = immutable
 
     def __repr__(self) -> str:
-        return f"sqlite:{self.db_path}"
+        suffix = ":immutable" if self.immutable else ""
+        return f"sqlite:{self.db_path}{suffix}"
+
+    def _connect(self) -> sqlite3.Connection:
+        """Open the database. Read-only by pragma, not by file mode.
+
+        A database in WAL mode is read through its `-shm` wal-index, which a
+        reader has to be able to create and lock — so even a pure reader needs
+        write access to the file and its directory. Asking for `mode=ro`
+        instead fails outright there, and `immutable=1` succeeds only by
+        promising SQLite the file never changes, which means skipping the WAL
+        and all locking: against a database something else is writing, that
+        returns whatever half-written pages happen to be on disk, silently.
+
+        `PRAGMA query_only` is what actually makes this connection read-only.
+        It refuses every write on the connection itself, without lying to
+        SQLite about the file.
+        """
+        if self.immutable:
+            # Only for a file that genuinely cannot change: a frozen snapshot,
+            # or one on read-only media where the sidecars cannot be created.
+            uri = f"file:{quote(str(self.db_path))}?mode=ro&immutable=1"
+            return sqlite3.connect(uri, uri=True)
+
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA query_only = 1;")
+        return conn
 
     def _query(self, query: str, params: list[str]) -> pl.DataFrame:
-        with sqlite3.connect(self.db_path) as conn:
+        conn = self._connect()
+        try:
             conn.execute("PRAGMA busy_timeout = 5000;")
-            return pl.read_database(
+            df = pl.read_database(
                 query=query, connection=conn, execute_options={"parameters": params}
             )
+        finally:
+            conn.close()
+
+        # Ensure down-stream code doesn't crash when trying to use an empty frame
+        if df.height == 0:
+            df = df.cast(
+                {
+                    name: pl.String
+                    for name, dtype in df.schema.items()
+                    if dtype == pl.Null
+                }
+            )
+        return df
 
     @staticmethod
     def _in_clause(column: str, values: list[str], params: list[str]) -> str:

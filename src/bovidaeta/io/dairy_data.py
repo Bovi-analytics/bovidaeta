@@ -53,16 +53,25 @@ class DairyData:
         self._backend = backend
 
     @classmethod
-    def from_sqlite(cls, db_path: str | Path = "/data/dairy_farm.db") -> "DairyData":
+    def from_sqlite(
+        cls, db_path: str | Path = "/data/dairy_farm.db", immutable: bool = False
+    ) -> "DairyData":
         """Read one farm's local SQLite database.
+
+        The file is always opened read-only.
 
         Args:
             db_path: Path to the farm's `.db` file, in the format described
                 by `bovidaeta/schemas/sqlite.sql`.
+            immutable: Promise SQLite the file will never change, letting it
+                skip the WAL and all locking. Only for a frozen snapshot or a
+                file on read-only media. Leave it off for a live database:
+                against a file something else writes to, an immutable read has
+                no lock and can return half-written pages without an error.
         """
         from .sqlite import _SQLiteBackend
 
-        return cls(_SQLiteBackend(db_path))
+        return cls(_SQLiteBackend(db_path, immutable=immutable))
 
     @classmethod
     def from_delta(
@@ -146,6 +155,7 @@ class DairyData:
         self,
         subset_cows: Iterable[str] | None = None,
         subset_herds: Iterable[str] | None = None,
+        subset_sire_ear_tags: Iterable[str] | None = None,
     ) -> Any:
         """Load cows.
 
@@ -154,10 +164,19 @@ class DairyData:
         as typed columns. Delta's is also a bridge table - a cow that
         moves between farms keeps its `animal_id` and gains a row per
         herd - so it can hold more than one row per animal.
+
+        Args:
+            subset_cows: Only these `animal_id`s.
+            subset_herds: Only cows in these `herd_id`s.
+            subset_sire_ear_tags: Only cows with these `sire_ear_tag`s.
+                `animal_id` is a UUID, so this is how a caller looks up the
+                cow a person named: the ear tag is what is written on the
+                animal and what a farmer types.
         """
         return self._backend.load_cows(
             cow_ids=normalise_ids(subset_cows),
             herd_ids=normalise_ids(subset_herds),
+            sire_ear_tags=normalise_ids(subset_sire_ear_tags),
         )
 
     def load_herds(self, subset_herds: Iterable[str] | None = None) -> Any:
