@@ -153,7 +153,14 @@ class _DeltaBackend(EventBackend):
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, "herd", args))
         if sire_ear_tags:
-            conditions.append(self._in_clause("sire_ear_tag", sire_ear_tags, "tag", args))
+            conditions.append(
+                self._in_clause(
+                    "upper(sire_ear_tag)",
+                    [t.upper() for t in sire_ear_tags],
+                    "tag",
+                    args,
+                )
+            )
 
         query = f"SELECT * FROM {self._table('cows')}"
         if conditions:

@@ -9,8 +9,10 @@ results are only intended for testing, not serious analysis.
 
 import json
 import math
+import os
 import random
 import sqlite3
+import time
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -23,6 +25,61 @@ from bovidaeta.schemas import SQLITE_SCHEMA, read_schema
 
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
+
+def _uuid7() -> uuid.UUID:
+    """A time-ordered UUID (RFC 9562 version 7) for event ids.
+
+    Successive ids increase, so the Events primary key grows at its end
+    instead of at a random place for every insert: far less random I/O,
+    which makes writing a large farm several times faster on slow or shared
+    disks. The random part comes from os.urandom, so it doesn't consume the
+    simulation's (seedable) `random` stream.
+    """
+    ms = time.time_ns() // 1_000_000
+    rand = int.from_bytes(os.urandom(10), "big")  # 80 bits, 74 used
+    value = (ms & ((1 << 48) - 1)) << 80
+    value |= 0x7 << 76  # version
+    value |= ((rand >> 62) & 0xFFF) << 64  # rand_a, 12 bits
+    value |= 0b10 << 62  # variant
+    value |= rand & ((1 << 62) - 1)  # rand_b, 62 bits
+    return uuid.UUID(int=value)
+
+
+# Ear tags: what a farmer reads off the cow and types to ask about her, so short and pronounceable
+# (consonant-vowel-consonant-vowel: "BOKA", "MIRU") rather than a UUID. Letters that look or sound
+# alike (C/K, Q, X, W, Y) are left out. 16*5*16*5 = 6,400 four-letter tags; a herd that runs out
+# (thousands of animals over a long simulation) continues with five letters.
+TAG_CONSONANTS = "BDFGHJKLMNPRSTVZ"
+TAG_VOWELS = "AEIOU"
+
+
+class EarTags:
+    """Hands out unique, random, pronounceable ear tags for one farm."""
+
+    def __init__(self):
+        self.used: set[str] = set()
+
+    def _random(self, letters: int) -> str:
+        return "".join(
+            random.choice(TAG_CONSONANTS if i % 2 == 0 else TAG_VOWELS)
+            for i in range(letters)
+        )
+
+    def new(self) -> str:
+        for letters in (4, 5, 6):
+            space = (len(TAG_CONSONANTS) ** ((letters + 1) // 2)) * (len(TAG_VOWELS) ** (letters // 2))
+            # random draws while the space is sparse; give up on a length once it is ~90% used
+            if len([t for t in self.used if len(t) == letters]) < 0.9 * space:
+                while True:
+                    tag = self._random(letters)
+                    if tag not in self.used:
+                        self.used.add(tag)
+                        return tag
+        raise RuntimeError("ran out of ear tags")
+
+
+# Reset by each Farm, so tags are unique within one farm database.
+EAR_TAGS = EarTags()
 
 
 class SimConfig(BaseModel):
@@ -159,7 +216,8 @@ class SimCow:
         self.days_pregnant = days_pregnant
         self.in_herd = True
         self.is_dnb = age_days >= SimConfig().dnb_age_threshold
-        self.sire_ear_tag = sire_ear_tag or str(uuid.uuid4())
+        # Despite its name, the `sire_ear_tag` column is the tag the tools look a cow up by.
+        self.sire_ear_tag = sire_ear_tag or EAR_TAGS.new()
         self.birth_date = birth_date
         self.born_on_farm = born_on_farm
         self.exit_date = exit_date
@@ -201,7 +259,7 @@ class SimCow:
         animal_id: str = "",
         metadata: dict | None = None,
     ) -> Event:
-        event_id = uuid.uuid4()
+        event_id = _uuid7()
         return Event(
             event_id=event_id,
             event_type=event_type,
@@ -607,7 +665,12 @@ class SimCow:
 
 
 class Farm:
-    def __init__(self, conf: SimConfig, db_path: Path | str = DB_PATH):
+    def __init__(
+        self, conf: SimConfig, db_path: Path | str = DB_PATH, overwrite: bool | None = None
+    ):
+        """`overwrite`: True to wipe an existing database, False to add to it, None to ask."""
+        global EAR_TAGS
+        EAR_TAGS = EarTags()
         self.conf = conf
         self.herd_id = str(uuid.uuid4())
         self.source_id = random.randint(100_000, 999_999)
@@ -616,10 +679,13 @@ class Farm:
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.db_conn = sqlite3.connect(db_path)
 
-        choice = input(
-            f"Do you want to delete existing data in:\n- {DB_PATH}\n\n"
-            "Enter 'y' (yes) or 'n' (no) or 'c' (cancel): "
-        )
+        if overwrite is None:
+            choice = input(
+                f"Do you want to delete existing data in:\n- {db_path}\n\n"
+                "Enter 'y' (yes) or 'n' (no) or 'c' (cancel): "
+            )
+        else:
+            choice = "y" if overwrite else "n"
         self.sim_cancelled = False
         if "c" in choice:
             self.sim_cancelled = True
@@ -717,6 +783,8 @@ class Farm:
 
     def initialize_herd(self):
         self.write_herd()
+        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
+        start_day = end_day - timedelta(days=int(self.conf.sim_years * 365))
         for _ in range(self.conf.target_herd_size):
             age = random.randint(730, 2500)
             is_milking = random.choice([True, False])
@@ -729,12 +797,18 @@ class Farm:
                 days_in_milk=dim,
                 days_pregnant=dcc,
                 born_on_farm=False,  # pre-existing herd: origin unknown
+                birth_date=(start_day - timedelta(days=age)).isoformat(),
             )
             self.cows.append(cow)
         self._batch_write_cows(self.cows)
         self.db_conn.commit()
 
     def write_events(self, events: list[Event]):
+        # Some events are scheduled ahead (a pregnancy check weeks after breeding). The database
+        # is history up to the end date, so nothing after it is written.
+        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
+        end = datetime(end_day.year, end_day.month, end_day.day, tzinfo=UTC)
+        events = [ev for ev in events if ev.datetime < end]
         if not events:
             return
         cursor = self.db_conn.cursor()
@@ -773,87 +847,7 @@ class Farm:
             print(
                 f"Day {date_i} / {int(self.conf.sim_years * 365)}", end="\r", flush=True
             )
-            daily_events = []
-            dirty_cows: list[SimCow] = []  # cows whose Cows row needs updating today
-
-            # Process all active cows
-            active_cows = [c for c in self.cows if c.in_herd]
-            for cow in active_cows:
-                c_events, new_calves = cow.process_day(self.conf, current_date)
-                daily_events.extend(c_events)
-                for calf in new_calves:
-                    calf.herd_id = self.herd_id
-                    calf.birth_date = current_date.date().isoformat()
-                    calf.born_on_farm = True
-                    dirty_cows.append(calf)
-                self.cows.extend(new_calves)
-
-                # Base culling logic
-                if random.random() < self.conf.daily_base_cull_prob:
-                    cow.in_herd = False
-                    cow.exit_date = current_date.date().isoformat()
-                    dirty_cows.append(cow)
-                    daily_events.append(
-                        cow.create_event(
-                            current_date,
-                            EventType.EXIT,
-                            metadata=_exit_metadata(cow, "routine"),
-                        )
-                    )
-
-            # Herd Size Orchestration
-            current_size = len([c for c in self.cows if c.in_herd])
-
-            if current_size < int(
-                self.conf.target_herd_size * (1 - self.conf.herd_variation_p)
-            ):
-                for _ in range(self.conf.target_herd_size - current_size):
-                    new_cow = SimCow(
-                        age_days=random.randint(730, 1000),
-                        herd_id=self.herd_id,
-                        is_milking=True,
-                        days_in_milk=10,
-                        born_on_farm=False,
-                    )
-                    self.cows.append(new_cow)
-                    dirty_cows.append(new_cow)
-                    purchase_meta = meta.HerdEntryMetadata(
-                        entry_type=meta.HerdEntryType.PURCHASED,
-                        entry_date=current_date.date(),
-                        age_at_entry=new_cow.age_days,
-                        source_farm=random.choice(
-                            ["Green Acres", "Valley Farms", "Sunny Ridge"]
-                        ),
-                        purchase_price=round(random.uniform(1500.0, 2500.0), 2),
-                        purchase_currency="USD",
-                    ).model_dump()
-                    daily_events.append(
-                        new_cow.create_event(
-                            current_date, EventType.HERD_ENTRY, metadata=purchase_meta
-                        )
-                    )
-
-            elif current_size > int(
-                self.conf.target_herd_size * (1 + self.conf.herd_variation_p)
-            ):
-                excess = current_size - self.conf.target_herd_size
-                # Cull priority: DNB cows first, then oldest
-                active_cows.sort(key=lambda x: (not x.is_dnb, x.age_days), reverse=True)
-                for cow in active_cows[:excess]:
-                    cow.in_herd = False
-                    cow.exit_date = current_date.date().isoformat()
-                    dirty_cows.append(cow)
-                    daily_events.append(
-                        cow.create_event(
-                            current_date,
-                            EventType.EXIT,
-                            metadata=_exit_metadata(cow, "capacity"),
-                        )
-                    )
-
-            self.write_events(daily_events)
-            if dirty_cows:
-                self._batch_write_cows(dirty_cows)
+            self.simulate_day(current_date)
             current_date += timedelta(days=1)
             date_i += 1
 
@@ -865,6 +859,92 @@ class Farm:
         cursor = self.db_conn.cursor()
         cursor.execute("SELECT count(*) FROM Events")
         print(f"Simulation complete. Generated {cursor.fetchone()[0]:,} events.")
+
+    def simulate_day(self, current_date: datetime):
+        """Simulate one day of the farm and write its events (not committed)."""
+        daily_events = []
+        dirty_cows: list[SimCow] = []  # cows whose Cows row needs updating today
+
+        # Process all active cows
+        active_cows = [c for c in self.cows if c.in_herd]
+        for cow in active_cows:
+            c_events, new_calves = cow.process_day(self.conf, current_date)
+            daily_events.extend(c_events)
+            for calf in new_calves:
+                calf.herd_id = self.herd_id
+                calf.birth_date = current_date.date().isoformat()
+                calf.born_on_farm = True
+                dirty_cows.append(calf)
+            self.cows.extend(new_calves)
+
+            # Base culling logic
+            if random.random() < self.conf.daily_base_cull_prob:
+                cow.in_herd = False
+                cow.exit_date = current_date.date().isoformat()
+                dirty_cows.append(cow)
+                daily_events.append(
+                    cow.create_event(
+                        current_date,
+                        EventType.EXIT,
+                        metadata=_exit_metadata(cow, "routine"),
+                    )
+                )
+
+        # Herd Size Orchestration
+        current_size = len([c for c in self.cows if c.in_herd])
+
+        if current_size < int(
+            self.conf.target_herd_size * (1 - self.conf.herd_variation_p)
+        ):
+            for _ in range(self.conf.target_herd_size - current_size):
+                age = random.randint(730, 1000)
+                new_cow = SimCow(
+                    age_days=age,
+                    herd_id=self.herd_id,
+                    is_milking=True,
+                    days_in_milk=10,
+                    born_on_farm=False,
+                    birth_date=(current_date.date() - timedelta(days=age)).isoformat(),
+                )
+                self.cows.append(new_cow)
+                dirty_cows.append(new_cow)
+                purchase_meta = meta.HerdEntryMetadata(
+                    entry_type=meta.HerdEntryType.PURCHASED,
+                    entry_date=current_date.date(),
+                    age_at_entry=new_cow.age_days,
+                    source_farm=random.choice(
+                        ["Green Acres", "Valley Farms", "Sunny Ridge"]
+                    ),
+                    purchase_price=round(random.uniform(1500.0, 2500.0), 2),
+                    purchase_currency="USD",
+                ).model_dump()
+                daily_events.append(
+                    new_cow.create_event(
+                        current_date, EventType.HERD_ENTRY, metadata=purchase_meta
+                    )
+                )
+
+        elif current_size > int(
+            self.conf.target_herd_size * (1 + self.conf.herd_variation_p)
+        ):
+            excess = current_size - self.conf.target_herd_size
+            # Cull priority: DNB cows first, then oldest
+            active_cows.sort(key=lambda x: (not x.is_dnb, x.age_days), reverse=True)
+            for cow in active_cows[:excess]:
+                cow.in_herd = False
+                cow.exit_date = current_date.date().isoformat()
+                dirty_cows.append(cow)
+                daily_events.append(
+                    cow.create_event(
+                        current_date,
+                        EventType.EXIT,
+                        metadata=_exit_metadata(cow, "capacity"),
+                    )
+                )
+
+        self.write_events(daily_events)
+        if dirty_cows:
+            self._batch_write_cows(dirty_cows)
 
 
 if __name__ == "__main__":

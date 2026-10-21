@@ -151,7 +151,11 @@ class _SQLiteBackend(EventBackend):
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, params))
         if sire_ear_tags:
-            conditions.append(self._in_clause("sire_ear_tag", sire_ear_tags, params))
+            conditions.append(
+                self._in_clause(
+                    "UPPER(sire_ear_tag)", [t.upper() for t in sire_ear_tags], params
+                )
+            )
 
         query = "SELECT animal_id, herd_id, sire_ear_tag, metadata FROM Cows"
         if conditions:
