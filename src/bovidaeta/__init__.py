@@ -2,6 +2,7 @@
 
 from .cow import BreedPart, Cow
 from .enums import (
+    AggregationPeriod,
     AnimalGender,
     Breed,
     BreedingType,
@@ -29,6 +30,7 @@ from .enums import (
 from .event import Event
 from .event_metadata import (
     ALL_METADATA,
+    AggregatedMilkMeterYieldsMetadata,
     BirthMetadata,
     BodyConditionScoreMetadata,
     BodyWeightKgMetadata,
@@ -55,6 +57,8 @@ from .io import DairyData
 __version__ = "0.1.0"
 
 __all__ = [
+    "AggregatedMilkMeterYieldsMetadata",
+    "AggregationPeriod",
     "ALL_METADATA",
     "AnimalGender",
     "BirthMetadata",

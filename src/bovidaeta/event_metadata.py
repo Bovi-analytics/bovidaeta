@@ -14,6 +14,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import (
+    AggregationPeriod,
     BreedingType,
     CalvingEaseType,
     ConfirmationStatus,
@@ -344,6 +345,72 @@ class MilkMeterYieldsMetadata(EventMetadataModel):
     )
 
 
+class AggregatedMilkMeterYieldsMetadata(EventMetadataModel):
+    """
+    Aggregated milk meter yields event metadata.
+
+    Milk meter data summed over a period instead of reported per milking
+    session, for sources that only provide totals. The event's datetime is
+    the start of the period; `aggregation_period` and `aggregation_length`
+    say how long it is (1 x day for daily totals, 2 x day for every other
+    day, 1 x week for weekly).
+    """
+
+    aggregation_period: AggregationPeriod = Field(
+        description="Calendar unit the period is measured in (day, week or month).",
+    )
+    aggregation_length: int = Field(
+        default=1,
+        ge=1,
+        description="Number of aggregation_periods covered (for example: 2 with day for every other day).",
+    )
+    milking_sessions: int | None = Field(
+        default=None,
+        ge=0,
+        description="Number of milking sessions in the period.",
+    )
+    milking_yield: float | None = Field(
+        default=None,
+        ge=0,
+        description="Total milk produced during the period, in kg (or liters).",
+    )
+    start_time: datetime | None = Field(
+        default=None,
+        description="Start time of the first milking session in the period (format: YYYY-MM-DD HH:MM:SS).",
+    )
+    end_time: datetime | None = Field(
+        default=None,
+        description="End time of the last milking session in the period (format: YYYY-MM-DD HH:MM:SS).",
+    )
+    robot_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="ID of the robot as attributed at the farm, if all sessions used the same robot (for example: 5).",
+    )
+    robot_name: str | None = Field(
+        default=None,
+        description='Name of the robot, if all sessions used the same robot (for example: "Astronaut 102").',
+    )
+    failure: bool | None = Field(
+        default=None,
+        description="Indicates if the robot encountered an error during any session in the period (true/false).",
+    )
+    refusal: bool | None = Field(
+        default=None,
+        description="Indicates if the cow refused milking or interrupted the system during any session in the period (true/false).",
+    )
+    milking_speed: float | None = Field(
+        default=None,
+        ge=0,
+        description="Average speed of milking over the sessions in the period (kg/min).",
+    )
+    body_weight: int | None = Field(
+        default=None,
+        ge=0,
+        description="Average body weight of the animal measured during the sessions in the period, in kg.",
+    )
+
+
 class BodyWeightKgMetadata(EventMetadataModel):
     """
     Body weight event metadata.
@@ -655,6 +722,7 @@ __all__ = [
     "ExitMetadata",
     "MilkRecordingMetadata",
     "MilkMeterYieldsMetadata",
+    "AggregatedMilkMeterYieldsMetadata",
     "FeedIntakeMetadata",
     "DiagnosisSampleMetadata",
     "SensorMeasurementMetadata",

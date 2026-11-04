@@ -25,6 +25,7 @@ class EventType(str, Enum):
     - DNBdecision: Decision is made to not breed the animal.
     - MilkRecording: Milk yield as recorded by a milk recording organization.
     - MilkMeterYields: Milk production of a single milking measured by milk meter on milk robot or in a milk parlour.
+    - AggregatedMilkMeterYields: Milk meter yields summed over a period (e.g. a day or a week), for sources that only report totals.
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
@@ -49,6 +50,7 @@ class EventType(str, Enum):
     DNB_DECISION = "DNBdecision"
     MILK_RECORDING = "MilkRecording"
     MILK_METER_YIELDS = "MilkMeterYields"
+    AGGREGATED_MILK_METER_YIELDS = "AggregatedMilkMeterYields"
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
@@ -60,6 +62,17 @@ class EventType(str, Enum):
     HERD_ENTRY = "HerdEntry"
     HERD_MOVE = "HerdMove"
     WEANING = "Weaning"
+
+
+class AggregationPeriod(str, Enum):
+    """
+    Calendar unit an aggregated measurement covers. Combined with a length,
+    e.g. 2 x day for every other day; a month is a calendar month.
+    """
+
+    DAY = "day"
+    WEEK = "week"
+    MONTH = "month"
 
 
 class SensorMeasurementType(str, Enum):
