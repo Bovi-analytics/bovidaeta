@@ -116,15 +116,15 @@ To install the library on a Databricks cluster, build a wheel and upload
 it to a Unity Catalog volume:
 
 ```bash
-uv build --wheel          # -> dist/bovidaeta-0.1.0-py3-none-any.whl
-databricks fs cp dist/bovidaeta-0.1.0-py3-none-any.whl \
+uv build --wheel          # -> dist/bovidaeta-0.1.1-py3-none-any.whl
+databricks fs cp dist/bovidaeta-0.1.1-py3-none-any.whl \
     dbfs:/Volumes/cornell_catalog/cornell_schema/libs/ # Or upload manually
 ```
 
 Then, in the notebook:
 
 ```python
-%pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.0-py3-none-any.whl
+%pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.1-py3-none-any.whl
 %restart_python
 ```
 

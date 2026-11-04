@@ -15,7 +15,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.0-py3-none-any.whl
+# MAGIC %pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.1-py3-none-any.whl
 # MAGIC %restart_python
 
 # COMMAND ----------
