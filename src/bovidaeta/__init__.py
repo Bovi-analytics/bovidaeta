@@ -53,13 +53,18 @@ from .event_metadata import (
 )
 from .herd import Herd
 from .io import DairyData
+from .lactation import (
+    load_lactation_records,
+    load_lactations,
+    select_lactations,
+)
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 __all__ = [
+    "ALL_METADATA",
     "AggregatedMilkMeterYieldsMetadata",
     "AggregationPeriod",
-    "ALL_METADATA",
     "AnimalGender",
     "BirthMetadata",
     "BodyConditionScoreMetadata",
@@ -107,6 +112,9 @@ __all__ = [
     "SensorMeasurementType",
     "TreatmentMetadata",
     "TreatmentResponseStatus",
+    "load_lactation_records",
+    "load_lactations",
+    "select_lactations",
     "to_polars",
 ]
 
