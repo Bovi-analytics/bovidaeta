@@ -59,7 +59,7 @@ from .lactation import (
     select_lactations,
 )
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     "ALL_METADATA",
