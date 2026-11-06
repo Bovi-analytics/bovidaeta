@@ -1,4 +1,4 @@
-"""Top-level public API for farm data definitions."""
+"""Top-level public API for bovidaeta."""
 
 from .cow import BreedPart, Cow
 from .enums import (

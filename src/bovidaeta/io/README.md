@@ -1,6 +1,6 @@
 # Loading data
 
-Bovidae-ta provides a simple `DairyData` class to efficiently load dairy data
+Bovidaeta provides a simple `DairyData` class to efficiently load dairy data
 in Python, so you don't need to write SQL queries.
 
 Currently we support loading bovidaeta stored in two contexts:
