@@ -41,7 +41,7 @@ class Cow(BaseModel):
     """
     A class to represent a cow.
 
-    Specify at least `animal_id`, `herd_id`, `gender`, and `birth_date`
+    Specify at least `animal_id`, `herd_id`, and `gender`
     when creating a new cow.
 
     """
@@ -65,10 +65,11 @@ class Cow(BaseModel):
             "neuter/cryptorchid variations."
         ),
     )
-    birth_date: date = Field(
+    birth_date: date | None = Field(
+        default=None,
         description=(
             "Day the animal was born as recorded by the farmer, format YYYY-MM-DD, "
-            "if available add time."
+            "if available add time. Empty when the source does not hold it."
         ),
     )
     exit_date: date | None = Field(
