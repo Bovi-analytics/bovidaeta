@@ -45,37 +45,26 @@ def _uuid7() -> uuid.UUID:
     return uuid.UUID(int=value)
 
 
-# Ear tags: what a farmer reads off the cow and types to ask about her, so short and pronounceable
-# (consonant-vowel-consonant-vowel: "BOKA", "MIRU") rather than a UUID. Letters that look or sound
-# alike (C/K, Q, X, W, Y) are left out. 16*5*16*5 = 6,400 four-letter tags; a herd that runs out
-# (thousands of animals over a long simulation) continues with five letters.
-TAG_CONSONANTS = "BDFGHJKLMNPRSTVZ"
-TAG_VOWELS = "AEIOU"
+# Ear tags: what a farmer reads off the cow and types to ask about her, so a short 5-digit code
+# ("43905") rather than a UUID. Codes start at 10000, so there is no leading zero to get lost
+# when a tag is read as a number. 90,000 codes is plenty for one simulated farm.
+TAG_MIN, TAG_MAX = 10_000, 99_999
 
 
 class EarTags:
-    """Hands out unique, random, pronounceable ear tags for one farm."""
+    """Hands out unique, random 5-digit ear tags for one farm."""
 
     def __init__(self):
         self.used: set[str] = set()
 
-    def _random(self, letters: int) -> str:
-        return "".join(
-            random.choice(TAG_CONSONANTS if i % 2 == 0 else TAG_VOWELS)
-            for i in range(letters)
-        )
-
     def new(self) -> str:
-        for letters in (4, 5, 6):
-            space = (len(TAG_CONSONANTS) ** ((letters + 1) // 2)) * (len(TAG_VOWELS) ** (letters // 2))
-            # random draws while the space is sparse; give up on a length once it is ~90% used
-            if len([t for t in self.used if len(t) == letters]) < 0.9 * space:
-                while True:
-                    tag = self._random(letters)
-                    if tag not in self.used:
-                        self.used.add(tag)
-                        return tag
-        raise RuntimeError("ran out of ear tags")
+        if len(self.used) > 0.9 * (TAG_MAX - TAG_MIN + 1):
+            raise RuntimeError("ran out of ear tags")
+        while True:
+            tag = str(random.randint(TAG_MIN, TAG_MAX))
+            if tag not in self.used:
+                self.used.add(tag)
+                return tag
 
 
 # Reset by each Farm, so tags are unique within one farm database.
