@@ -16,7 +16,7 @@
 
 # %%
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import polars as pl
 
@@ -55,8 +55,8 @@ print(f"{milk.height:,} milk recordings")
 
 # %%
 milk_2020 = data.load_events(
-    dts_start=datetime(2020, 1, 1, tzinfo=UTC),
-    dts_end=datetime(2021, 1, 1, tzinfo=UTC),
+    dts_start=datetime(2020, 1, 1, tzinfo=timezone.utc),
+    dts_end=datetime(2021, 1, 1, tzinfo=timezone.utc),
     subset_events=[EventType.MILK_RECORDING],
     subset_metadata=["milking_yield"],
 )

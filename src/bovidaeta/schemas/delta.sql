@@ -1,5 +1,4 @@
--- Delta table definitions for the Israel (Yaniv) events dataset, and any
--- future farm data joining the same catalog/schema.
+-- Delta table definitions for bovidaeta data in Databricks Unity Catalog.
 --
 -- herds/cows mirror the bovidaeta Herd/Cow models directly (stable, low
 -- rate of change). Events use a single generic table with a VARIANT
@@ -9,11 +8,18 @@
 -- (event_type, event_year) still gives per-event-type query pruning
 -- without needing separate tables.
 --
--- Run once in a Databricks SQL editor (or `databricks sql query --file ...`)
--- against a warehouse/cluster with access to cornell_catalog.cornell_schema.
+-- Run once in a Databricks SQL editor (or `databricks sql query --file ...`).
 -- Requires DBR 15.3+ (or a current serverless SQL warehouse) for VARIANT.
+--
+-- Set the target catalog and schema below first. The tables and views are
+-- created there, and the views keep pointing at that schema's `events`
+-- table. Pass the same `catalog.schema` to `DairyData.from_delta(...)`.
 
-CREATE TABLE IF NOT EXISTS cornell_catalog.cornell_schema.herds (
+USE CATALOG bovidaeta;
+CREATE SCHEMA IF NOT EXISTS farms;
+USE SCHEMA farms;
+
+CREATE TABLE IF NOT EXISTS herds (
   herd_id              STRING NOT NULL,
   source_id            BIGINT,
   name                 STRING,
@@ -35,9 +41,8 @@ CREATE TABLE IF NOT EXISTS cornell_catalog.cornell_schema.herds (
 ) USING DELTA;
 
 -- Bridge table: animal_id <-> herd_id. A cow keeps ONE animal_id for life
--- even if it moves between herds/farms, so this can (and does, for ~2.4% of
--- Yaniv cows) hold more than one row per animal_id.
-CREATE TABLE IF NOT EXISTS cornell_catalog.cornell_schema.cows (
+-- even if it moves between herds/farms, so this can hold more than one row per animal_id.
+CREATE TABLE IF NOT EXISTS cows (
   animal_id            STRING NOT NULL,
   herd_id              STRING NOT NULL,
   sire_ear_tag         STRING,
@@ -52,7 +57,7 @@ CREATE TABLE IF NOT EXISTS cornell_catalog.cornell_schema.cows (
   CONSTRAINT cows_pk PRIMARY KEY (animal_id, herd_id)
 ) USING DELTA;
 
-CREATE TABLE IF NOT EXISTS cornell_catalog.cornell_schema.events (
+CREATE TABLE IF NOT EXISTS events (
   event_id    STRING NOT NULL,
   animal_id   STRING NOT NULL,
   event_type  STRING NOT NULL,
@@ -65,7 +70,7 @@ PARTITIONED BY (event_type, event_year);
 
 -- Example typed convenience views - free to add/drop as event types come
 -- and go, since they cost no storage and need no data migration.
-CREATE OR REPLACE VIEW cornell_catalog.cornell_schema.milk_recording_v AS
+CREATE OR REPLACE VIEW milk_recording_v AS
 SELECT
   event_id, animal_id, datetime,
   metadata:lactose_percentage::DOUBLE  AS lactose_percentage,
@@ -73,10 +78,10 @@ SELECT
   metadata:protein_percentage::DOUBLE  AS protein_percentage,
   metadata:scc::BIGINT                 AS scc,
   metadata:milking_yield::DOUBLE       AS milking_yield
-FROM cornell_catalog.cornell_schema.events
+FROM events
 WHERE event_type = 'MilkRecording';
 
-CREATE OR REPLACE VIEW cornell_catalog.cornell_schema.diagnosis_v AS
+CREATE OR REPLACE VIEW diagnosis_v AS
 SELECT
   event_id, animal_id, datetime,
   metadata:disease.disease_code::STRING         AS disease_code,
@@ -87,5 +92,5 @@ SELECT
   metadata:confirmation_status::STRING          AS confirmation_status,
   metadata:diagnostic_source::STRING            AS diagnostic_source,
   metadata:notes::STRING                        AS notes
-FROM cornell_catalog.cornell_schema.events
+FROM events
 WHERE event_type = 'Diagnosis';

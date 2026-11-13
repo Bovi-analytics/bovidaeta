@@ -17,9 +17,6 @@ if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     import polars as pl
     from pyspark.sql import DataFrame, SparkSession
 
-DEFAULT_CATALOG_SCHEMA = "cornell_catalog.cornell_schema"
-
-
 def _resolve_spark() -> "SparkSession":
     try:
         from pyspark.sql import SparkSession
@@ -40,7 +37,7 @@ class _DeltaBackend(EventBackend):
 
     def __init__(
         self,
-        catalog_schema: str = DEFAULT_CATALOG_SCHEMA,
+        catalog_schema: str,
         spark: "SparkSession | None" = None,
     ):
         self.catalog_schema = validate_identifier(catalog_schema, "catalog.schema")

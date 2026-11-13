@@ -5,28 +5,26 @@
 # MAGIC `DairyData.from_delta` reads the multi-farm tables in Unity Catalog.
 # MAGIC Import this file into Databricks.
 # MAGIC
-# MAGIC If you're NOT using the Bovi-Analytics Databricks workspace,
-# MAGIC before running this notebook, ensure that:
-# MAGIC - Delta tables exist: `bovidaeta/schemas/delta.sql`
-# MAGIC - Ensure there's a Volume with one or more SQLite databases, one per farm
-# MAGIC - Delta tables are filled: `pipelines/sqlite_to_delta.py`
-# MAGIC - You build the package wheel and upload it your workspace
-# MAGIC - Change the `CATALOG_LOCATION` below
+# MAGIC Before running this notebook, make sure that:
+# MAGIC - the Delta tables exist: run `bovidaeta/schemas/delta.sql` once
+# MAGIC - there is a Volume with one or more SQLite databases, one per farm
+# MAGIC - the Delta tables are filled: run `pipelines/sqlite_to_delta.py`
+# MAGIC - `CATALOG_LOCATION` below points at your `catalog.schema`
 
 # COMMAND ----------
 
-# MAGIC %pip install /Volumes/cornell_catalog/cornell_schema/libs/bovidaeta-0.1.3-py3-none-any.whl
+# MAGIC %pip install bovidaeta
 # MAGIC %restart_python
 
 # COMMAND ----------
 
-CATALOG_LOCATION = "cornell_catalog.cornell_schema"
+CATALOG_LOCATION = "bovidaeta.farms"
 dbutils.widgets.text("catalog_schema", CATALOG_LOCATION)
 CATALOG_SCHEMA = dbutils.widgets.get("catalog_schema")
 
 # COMMAND ----------
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from pyspark.sql import functions as F
 
@@ -61,8 +59,8 @@ data.load_events().groupBy("event_type").count().orderBy(F.desc("count")).show(
 # COMMAND ----------
 
 milk = data.load_events(
-    dts_start=datetime(2019, 1, 1, tzinfo=UTC),
-    dts_end=datetime(2021, 1, 1, tzinfo=UTC),
+    dts_start=datetime(2019, 1, 1, tzinfo=timezone.utc),
+    dts_end=datetime(2021, 1, 1, tzinfo=timezone.utc),
     subset_events=[EventType.MILK_RECORDING],
     subset_metadata={"milking_yield": "DOUBLE"},
 )

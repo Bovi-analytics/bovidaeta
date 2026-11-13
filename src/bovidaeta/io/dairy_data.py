@@ -30,7 +30,7 @@ class DairyData:
     data = DairyData.from_sqlite("dairy_farm.db")
 
     # In Databricks: every farm, in Unity Catalog.
-    data = DairyData.from_delta("cornell_catalog.cornell_schema")
+    data = DairyData.from_delta("bovidaeta.farms")
 
     # Identical from here on.
     df = data.load_events(subset_events=[EventType.MILK_RECORDING])
@@ -76,7 +76,7 @@ class DairyData:
     @classmethod
     def from_delta(
         cls,
-        catalog_schema: str = "cornell_catalog.cornell_schema",
+        catalog_schema: str,
         spark: "SparkSession | None" = None,
     ) -> "DairyData":
         """Read the multi-farm Delta tables in Unity Catalog.
@@ -86,7 +86,7 @@ class DairyData:
 
         Args:
             catalog_schema: Fully qualified `catalog.schema` holding the
-                `herds`, `cows` and `events` tables.
+                `herds`, `cows` and `events` tables, e.g. `"bovidaeta.farms"`.
             spark: Session to use. Defaults to the active one, which is
                 what you want in a notebook.
         """

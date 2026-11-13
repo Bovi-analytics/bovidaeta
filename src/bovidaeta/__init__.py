@@ -59,7 +59,12 @@ from .lactation import (
     select_lactations,
 )
 
-__version__ = "0.1.3"
+from importlib.metadata import PackageNotFoundError, version as _version
+
+try:
+    __version__ = _version("bovidaeta")
+except PackageNotFoundError:  # pragma: no cover - running from a source tree without installing
+    __version__ = "0.0.0"
 
 __all__ = [
     "ALL_METADATA",

@@ -43,8 +43,8 @@ from pyspark.sql.types import (
     StructType,
 )
 
-dbutils.widgets.text("farms_dir", "/Volumes/cornell_catalog/cornell_schema/farm_exports/farms")
-dbutils.widgets.text("catalog_schema", "cornell_catalog.cornell_schema")
+dbutils.widgets.text("farms_dir", "/Volumes/bovidaeta/farms/files/farms")
+dbutils.widgets.text("catalog_schema", "bovidaeta.farms")
 
 FARMS_DIR = Path(dbutils.widgets.get("farms_dir"))
 CATALOG_SCHEMA = dbutils.widgets.get("catalog_schema")

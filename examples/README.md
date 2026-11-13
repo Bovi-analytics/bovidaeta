@@ -11,8 +11,7 @@ side by side — and so the places they have to diverge are visible.
   yet emit every event type the example uses.
 - **`delta_quickstart.py`** — `DairyData.from_delta`: every farm, Unity
   Catalog, Spark. Import into Databricks as a notebook (it carries the
-  `# Databricks notebook source` header); see the root README for building
-  and uploading the wheel it installs.
+  `# Databricks notebook source` header); it installs `bovidaeta` from PyPI.
 
 Both are percent/notebook-format `.py` rather than `.ipynb`, so they diff
 and review as source and run without a Jupyter install on a farm device.

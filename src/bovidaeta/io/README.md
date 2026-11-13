@@ -10,7 +10,7 @@ from bovidaeta import DairyData, EventType
 
 data = DairyData.from_sqlite("dairy_farm.db")
 
-data = DairyData.from_delta("cornell_catalog.cornell_schema")
+data = DairyData.from_delta("bovidaeta.farms")
 
 # Identical from here on.
 df = data.load_events(subset_events=[EventType.MILK_RECORDING])
@@ -43,7 +43,7 @@ When a Delta result is small enough to fit on the driver, `to_polars` is optiona
 ```python
 from bovidaeta import to_polars
 
-data = DairyData.from_delta("cornell_catalog.cornell_schema")
+data = DairyData.from_delta("bovidaeta.farms")
 
 per_cow = data.load_events(...).groupBy("animal_id").avg("milking_yield")
 df = to_polars(per_cow)  # aggregate first; this collects
@@ -67,11 +67,11 @@ Every event row comes back with `event_id`, `animal_id`, `event_type`,
 **Use the filters where possible.** They can dramatically decrease the amount of data read and save a lot of waiting time. Especially the local SQLite files can quickly blow up when data is moved from SQLite into a DataFrame, so not using filters can easily create memory problems.
 
 ```python
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 df = data.load_events(
-    dts_start=datetime(2020, 1, 1, tzinfo=UTC),
-    dts_end=datetime(2021, 1, 1, tzinfo=UTC),
+    dts_start=datetime(2020, 1, 1, tzinfo=timezone.utc),
+    dts_end=datetime(2021, 1, 1, tzinfo=timezone.utc),
     subset_events=[EventType.MILK_RECORDING],
     subset_metadata={"milking_yield": "DOUBLE"},
 )

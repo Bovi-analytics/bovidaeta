@@ -14,7 +14,7 @@ import random
 import sqlite3
 import time
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -772,7 +772,7 @@ class Farm:
 
     def initialize_herd(self):
         self.write_herd()
-        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
+        end_day = self.conf.sim_end_date or datetime.now(timezone.utc).date()
         start_day = end_day - timedelta(days=int(self.conf.sim_years * 365))
         for _ in range(self.conf.target_herd_size):
             age = random.randint(730, 2500)
@@ -795,8 +795,8 @@ class Farm:
     def write_events(self, events: list[Event]):
         # Some events are scheduled ahead (a pregnancy check weeks after breeding). The database
         # is history up to the end date, so nothing after it is written.
-        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
-        end = datetime(end_day.year, end_day.month, end_day.day, tzinfo=UTC)
+        end_day = self.conf.sim_end_date or datetime.now(timezone.utc).date()
+        end = datetime(end_day.year, end_day.month, end_day.day, tzinfo=timezone.utc)
         events = [ev for ev in events if ev.datetime < end]
         if not events:
             return
@@ -825,8 +825,8 @@ class Farm:
         # Run backwards from the end date so the output is history rather
         # than a decade of the future: real farm data is historical, and
         # analyses filter on past years.
-        end_day = self.conf.sim_end_date or datetime.now(UTC).date()
-        end_date = datetime(end_day.year, end_day.month, end_day.day, tzinfo=UTC)
+        end_day = self.conf.sim_end_date or datetime.now(timezone.utc).date()
+        end_date = datetime(end_day.year, end_day.month, end_day.day, tzinfo=timezone.utc)
         current_date = end_date - timedelta(days=int(self.conf.sim_years * 365))
         date_i = 1
 
