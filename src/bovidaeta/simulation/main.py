@@ -585,6 +585,7 @@ class SimCow:
                     milking_speed=round(yield_kg / duration_mins, 2),
                     body_weight=random.randint(550, 750),
                     milking_session=session_num,
+                    milk_date=current_date.date(),
                 ).model_dump()
                 events.append(
                     self.create_event(

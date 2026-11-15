@@ -54,6 +54,7 @@ from .event_metadata import (
 from .herd import Herd
 from .io import DairyData
 from .lactation import (
+    load_daily_milk_yields,
     load_lactation_records,
     load_lactations,
     select_lactations,
@@ -117,6 +118,7 @@ __all__ = [
     "SensorMeasurementType",
     "TreatmentMetadata",
     "TreatmentResponseStatus",
+    "load_daily_milk_yields",
     "load_lactation_records",
     "load_lactations",
     "select_lactations",
