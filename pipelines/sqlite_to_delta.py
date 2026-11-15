@@ -5,7 +5,7 @@
 # MAGIC Run `bovidaeta/schemas/delta.sql` once first to create the tables. This notebook reads
 # MAGIC every `dairy_farm_*.db` file (one per farm, see export_all_farms.py)
 # MAGIC from a folder already uploaded to the volume, and appends each farm's
-# MAGIC `Herds` / `Cows` / `Events` rows. Events keep their raw JSON metadata,
+# MAGIC `Herds` / `Cows` / `AnimalEvents` rows. Events keep their raw JSON metadata,
 # MAGIC parsed into the `events` table's VARIANT column - no per-event-type
 # MAGIC handling needed, a new event type just flows through as-is.
 # MAGIC
@@ -158,7 +158,7 @@ def load_farm(db_path: Path) -> tuple[int, int, int]:
     )
 
     n_events = 0
-    cur = conn.execute("SELECT event_id, animal_id, event_type, datetime, metadata FROM Events")
+    cur = conn.execute("SELECT event_id, animal_id, event_type, datetime, metadata FROM AnimalEvents")
     while True:
         batch = cur.fetchmany(BATCH_SIZE)
         if not batch:

@@ -125,7 +125,7 @@ class _SQLiteBackend(EventBackend):
         if cow_ids:
             conditions.append(self._in_clause("animal_id", cow_ids, params))
         if herd_ids:
-            # Events carry no herd column; membership lives on Cows. One
+            # AnimalEvents carry no herd column; membership lives on Cows. One
             # file usually holds one herd, so this is rarely needed - it
             # exists so the argument means the same thing on both backends.
             herd_filter = self._in_clause("herd_id", herd_ids, params)
@@ -133,7 +133,7 @@ class _SQLiteBackend(EventBackend):
                 f"animal_id IN (SELECT animal_id FROM Cows WHERE {herd_filter})"
             )
 
-        query = f"SELECT {', '.join(select_cols)} FROM Events"
+        query = f"SELECT {', '.join(select_cols)} FROM AnimalEvents"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         return self._query(query, params)

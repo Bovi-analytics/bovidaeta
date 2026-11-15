@@ -29,7 +29,7 @@ DB_PATH = DATA_DIR / "dairy_farm.db"
 def _uuid7() -> uuid.UUID:
     """A time-ordered UUID (RFC 9562 version 7) for event ids.
 
-    Successive ids increase, so the Events primary key grows at its end
+    Successive ids increase, so the AnimalEvents primary key grows at its end
     instead of at a random place for every insert: far less random I/O,
     which makes writing a large farm several times faster on slow or shared
     disks. The random part comes from os.urandom, so it doesn't consume the
@@ -687,7 +687,7 @@ class Farm:
     def setup_db(self):
         """(Re)create the tables from the bundled `schemas/sqlite.sql`."""
         cursor = self.db_conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS Events")
+        cursor.execute("DROP TABLE IF EXISTS AnimalEvents")
         cursor.execute("DROP TABLE IF EXISTS Cows")
         cursor.execute("DROP TABLE IF EXISTS Herds")
         cursor.executescript(read_schema(SQLITE_SCHEMA))
@@ -817,7 +817,7 @@ class Farm:
             for ev in events
         ]
         cursor.executemany(
-            "INSERT INTO Events (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO AnimalEvents (event_id, datetime, event_type, animal_id, metadata) VALUES (?, ?, ?, ?, ?)",
             formatted_events,
         )
 
@@ -846,7 +846,7 @@ class Farm:
         self.db_conn.commit()
 
         cursor = self.db_conn.cursor()
-        cursor.execute("SELECT count(*) FROM Events")
+        cursor.execute("SELECT count(*) FROM AnimalEvents")
         print(f"Simulation complete. Generated {cursor.fetchone()[0]:,} events.")
 
     def simulate_day(self, current_date: datetime):
