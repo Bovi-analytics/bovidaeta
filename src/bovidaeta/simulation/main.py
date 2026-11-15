@@ -45,30 +45,30 @@ def _uuid7() -> uuid.UUID:
     return uuid.UUID(int=value)
 
 
-# Ear tags: what a farmer reads off the cow and types to ask about her, so a short 5-digit code
-# ("43905") rather than a UUID. Codes start at 10000, so there is no leading zero to get lost
-# when a tag is read as a number. 90,000 codes is plenty for one simulated farm.
-TAG_MIN, TAG_MAX = 10_000, 99_999
+# Farm numbers: the work number a farmer reads off the cow and types to ask about her, so a
+# short 5-digit number (43905) rather than a UUID. Stored as `animal_farm_number`. Numbers
+# start at 10000 so they all have the same length; 90,000 is plenty for one simulated farm.
+NUMBER_MIN, NUMBER_MAX = 10_000, 99_999
 
 
-class EarTags:
-    """Hands out unique, random 5-digit ear tags for one farm."""
+class FarmNumbers:
+    """Hands out unique, random 5-digit farm numbers for one farm."""
 
     def __init__(self):
-        self.used: set[str] = set()
+        self.used: set[int] = set()
 
-    def new(self) -> str:
-        if len(self.used) > 0.9 * (TAG_MAX - TAG_MIN + 1):
-            raise RuntimeError("ran out of ear tags")
+    def new(self) -> int:
+        if len(self.used) > 0.9 * (NUMBER_MAX - NUMBER_MIN + 1):
+            raise RuntimeError("ran out of farm numbers")
         while True:
-            tag = str(random.randint(TAG_MIN, TAG_MAX))
-            if tag not in self.used:
-                self.used.add(tag)
-                return tag
+            number = random.randint(NUMBER_MIN, NUMBER_MAX)
+            if number not in self.used:
+                self.used.add(number)
+                return number
 
 
-# Reset by each Farm, so tags are unique within one farm database.
-EAR_TAGS = EarTags()
+# Reset by each Farm, so farm numbers are unique within one farm database.
+FARM_NUMBERS = FarmNumbers()
 
 
 class SimConfig(BaseModel):
@@ -192,7 +192,7 @@ class SimCow:
         is_milking: bool = False,
         days_in_milk: int = 0,
         days_pregnant: int = 0,
-        sire_ear_tag: str | None = None,
+        animal_farm_number: int | None = None,
         birth_date: str | None = None,
         born_on_farm: bool | None = None,
         exit_date: str | None = None,
@@ -205,8 +205,8 @@ class SimCow:
         self.days_pregnant = days_pregnant
         self.in_herd = True
         self.is_dnb = age_days >= SimConfig().dnb_age_threshold
-        # Despite its name, the `sire_ear_tag` column is the tag the tools look a cow up by.
-        self.sire_ear_tag = sire_ear_tag or EAR_TAGS.new()
+        # The work number the tools look a cow up by; unique within the farm.
+        self.animal_farm_number = animal_farm_number or FARM_NUMBERS.new()
         self.birth_date = birth_date
         self.born_on_farm = born_on_farm
         self.exit_date = exit_date
@@ -222,7 +222,6 @@ class SimCow:
 
         # Randomised static metadata (unrealistic values are fine for simulation)
         self.gender = random.choices(["female", "male"], weights=[95, 5])[0]
-        self.animal_farm_number = random.randint(1, 9999)
         self.animal_ear_tag = f"NL {random.randint(100_000_000, 999_999_999)}"
         self.animal_legal_id = self.animal_ear_tag  # mirrors EU convention
         # Breed: mostly pure HOL, occasionally crossed with JER or MRY
@@ -658,8 +657,8 @@ class Farm:
         self, conf: SimConfig, db_path: Path | str = DB_PATH, overwrite: bool | None = None
     ):
         """`overwrite`: True to wipe an existing database, False to add to it, None to ask."""
-        global EAR_TAGS
-        EAR_TAGS = EarTags()
+        global FARM_NUMBERS
+        FARM_NUMBERS = FarmNumbers()
         self.conf = conf
         self.herd_id = str(uuid.uuid4())
         self.source_id = random.randint(100_000, 999_999)
@@ -733,7 +732,7 @@ class Farm:
             ON CONFLICT(animal_id) DO UPDATE SET
                 metadata = excluded.metadata
             """,
-            (cow.id, cow.herd_id, cow.sire_ear_tag, metadata),
+            (cow.id, cow.herd_id, None, metadata),
         )
 
     def _batch_write_cows(self, cows: list["SimCow"]):
@@ -742,7 +741,7 @@ class Farm:
             (
                 cow.id,
                 cow.herd_id,
-                cow.sire_ear_tag,
+                None,  # sire_ear_tag: the simulation has no sires
                 json.dumps(
                     {
                         "birth_date": cow.birth_date,

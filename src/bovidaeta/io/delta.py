@@ -141,7 +141,7 @@ class _DeltaBackend(EventBackend):
         self,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
-        sire_ear_tags: list[str] | None,
+        farm_numbers: list[int] | None,
     ) -> "DataFrame":
         conditions: list[str] = []
         args: dict[str, Any] = {}
@@ -149,14 +149,9 @@ class _DeltaBackend(EventBackend):
             conditions.append(self._in_clause("animal_id", cow_ids, "cow", args))
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, "herd", args))
-        if sire_ear_tags:
+        if farm_numbers:
             conditions.append(
-                self._in_clause(
-                    "upper(sire_ear_tag)",
-                    [t.upper() for t in sire_ear_tags],
-                    "tag",
-                    args,
-                )
+                self._in_clause("animal_farm_number", farm_numbers, "farm_number", args)
             )
 
         query = f"SELECT * FROM {self._table('cows')}"

@@ -142,18 +142,22 @@ class _SQLiteBackend(EventBackend):
         self,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
-        sire_ear_tags: list[str] | None,
+        farm_numbers: list[int] | None,
     ) -> pl.DataFrame:
         conditions: list[str] = []
-        params: list[str] = []
+        params: list = []
         if cow_ids:
             conditions.append(self._in_clause("animal_id", cow_ids, params))
         if herd_ids:
             conditions.append(self._in_clause("herd_id", herd_ids, params))
-        if sire_ear_tags:
+        if farm_numbers:
+            # Cow attributes live in the JSON `metadata` column. Cows is one row
+            # per animal, so scanning it is cheap and needs no index.
             conditions.append(
                 self._in_clause(
-                    "UPPER(sire_ear_tag)", [t.upper() for t in sire_ear_tags], params
+                    "json_extract(metadata, '$.animal_farm_number')",
+                    farm_numbers,
+                    params,
                 )
             )
 

@@ -58,6 +58,19 @@ def normalise_ids(subset: Iterable[str] | None) -> list[str] | None:
     return [str(s) for s in subset]
 
 
+def normalise_farm_numbers(subset: Iterable[int | str] | None) -> list[int] | None:
+    """Accept farm numbers as ints or numeric strings (" 33119"); return a list of int."""
+    if not subset:
+        return None
+    numbers = []
+    for s in subset:
+        try:
+            numbers.append(int(str(s).strip()))
+        except ValueError:
+            raise ValueError(f"Farm number must be a whole number, got {s!r}.") from None
+    return numbers
+
+
 def normalise_metadata(
     subset_metadata: Iterable[str] | Mapping[str, str] | None,
 ) -> dict[str, str | None] | None:
@@ -145,7 +158,7 @@ class EventBackend(ABC):
         self,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
-        sire_ear_tags: list[str] | None,
+        farm_numbers: list[int] | None,
     ) -> Any: ...
 
     @abstractmethod

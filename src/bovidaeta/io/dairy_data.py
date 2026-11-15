@@ -9,6 +9,7 @@ from ..enums import EventType
 from .base import (
     EventBackend,
     normalise_event_types,
+    normalise_farm_numbers,
     normalise_ids,
     normalise_metadata,
     validate_datetime_range,
@@ -155,7 +156,7 @@ class DairyData:
         self,
         subset_cows: Iterable[str] | None = None,
         subset_herds: Iterable[str] | None = None,
-        subset_sire_ear_tags: Iterable[str] | None = None,
+        subset_farm_numbers: Iterable[int | str] | None = None,
     ) -> Any:
         """Load cows.
 
@@ -168,15 +169,18 @@ class DairyData:
         Args:
             subset_cows: Only these `animal_id`s.
             subset_herds: Only cows in these `herd_id`s.
-            subset_sire_ear_tags: Only cows with these `sire_ear_tag`s.
-                `animal_id` is a UUID, so this is how a caller looks up the
-                cow a person named: the ear tag is what is written on the
-                animal and what a farmer types.
+            subset_farm_numbers: Only cows with these `animal_farm_number`s
+                (ints, or numeric strings). `animal_id` is a UUID, so this is
+                how a caller looks up the cow a person named: the farm
+                (work) number is what is on the cow's collar and what a
+                farmer types. A farm can reuse a number over time, so one
+                number can match more than one cow; prefer the one without
+                an `exit_date`.
         """
         return self._backend.load_cows(
             cow_ids=normalise_ids(subset_cows),
             herd_ids=normalise_ids(subset_herds),
-            sire_ear_tags=normalise_ids(subset_sire_ear_tags),
+            farm_numbers=normalise_farm_numbers(subset_farm_numbers),
         )
 
     def load_herds(self, subset_herds: Iterable[str] | None = None) -> Any:
