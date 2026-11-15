@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS Herds (
     country_code TEXT
 );
 
-CREATE TABLE IF NOT EXISTS Events (
+-- Events about a single animal (Delta: `events`). Named AnimalEvents so that
+-- events not tied to an animal can get a table of their own later.
+CREATE TABLE IF NOT EXISTS AnimalEvents (
     event_id   TEXT PRIMARY KEY,
     datetime   TEXT NOT NULL,
     event_type TEXT NOT NULL,
@@ -43,5 +45,8 @@ CREATE TABLE IF NOT EXISTS Cows (
     metadata     TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_events_type_dts   ON Events (event_type, datetime);
-CREATE INDEX IF NOT EXISTS idx_events_animal_dts ON Events (animal_id, datetime);
+-- The index names date from when the table was called Events. They are kept,
+-- so a database migrated with `ALTER TABLE Events RENAME TO AnimalEvents`
+-- (which keeps its indexes) doesn't get every index built a second time.
+CREATE INDEX IF NOT EXISTS idx_events_type_dts   ON AnimalEvents (event_type, datetime);
+CREATE INDEX IF NOT EXISTS idx_events_animal_dts ON AnimalEvents (animal_id, datetime);
