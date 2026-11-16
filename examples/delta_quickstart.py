@@ -19,8 +19,6 @@
 # COMMAND ----------
 
 CATALOG_LOCATION = "bovidaeta.farms"
-dbutils.widgets.text("catalog_schema", CATALOG_LOCATION)
-CATALOG_SCHEMA = dbutils.widgets.get("catalog_schema")
 
 # COMMAND ----------
 
@@ -30,7 +28,7 @@ from pyspark.sql import functions as F
 
 from bovidaeta import DairyData, EventType, to_polars
 
-data = DairyData.from_delta(CATALOG_SCHEMA)
+data = DairyData.from_delta(CATALOG_LOCATION)
 print(data)
 
 # COMMAND ----------
@@ -52,7 +50,7 @@ data.load_events().groupBy("event_type").count().orderBy(F.desc("count")).show(
 # MAGIC %md
 # MAGIC ## 2. Filtering
 # MAGIC
-# MAGIC `events` is partitioned by `(event_type, event_year)`. Meaning that
+# MAGIC `animal_events` is partitioned by `(event_type, event_year)`. Meaning that
 # MAGIC passing`subset_events` together with a datetime range lets Delta skip
 # MAGIC huge amounts of data. This saves a lot of time and memory!
 
