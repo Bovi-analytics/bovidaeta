@@ -6,7 +6,7 @@
 -- this file verbatim).
 --
 -- Metadata is stored as a JSON TEXT column rather than as typed columns,
--- for the same reason the Delta `events` table uses VARIANT: a new event
+-- for the same reason the Delta `animal_events` table uses VARIANT: a new event
 -- type or a new metadata field needs no migration. `json_extract` pulls
 -- individual keys back out as columns at query time.
 --
@@ -14,7 +14,7 @@
 -- worth knowing about:
 --   * Delta `cows` flattens the cow metadata into typed columns, while
 --     here it stays a JSON blob.
---   * Delta `events` has no herd column; herd membership is resolved
+--   * Delta `animal_events` has no herd column; herd membership is resolved
 --     through the `cows` bridge table, since one animal_id can appear in
 --     more than one herd over its life. On a single farm that question
 --     rarely arises, but `Cows.herd_id` answers it the same way.
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS Herds (
     country_code TEXT
 );
 
--- Events about a single animal (Delta: `events`). Named AnimalEvents so that
+-- Events about a single animal (Delta: `animal_events`). Named AnimalEvents so that
 -- events not tied to an animal can get a table of their own later.
 CREATE TABLE IF NOT EXISTS AnimalEvents (
     event_id   TEXT PRIMARY KEY,

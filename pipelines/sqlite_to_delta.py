@@ -6,7 +6,7 @@
 # MAGIC every `dairy_farm_*.db` file (one per farm, see export_all_farms.py)
 # MAGIC from a folder already uploaded to the volume, and appends each farm's
 # MAGIC `Herds` / `Cows` / `AnimalEvents` rows. Events keep their raw JSON metadata,
-# MAGIC parsed into the `events` table's VARIANT column - no per-event-type
+# MAGIC parsed into the `animal_events` table's VARIANT column - no per-event-type
 # MAGIC handling needed, a new event type just flows through as-is.
 # MAGIC
 # MAGIC The SQLite side of this is the format described by
@@ -168,7 +168,7 @@ def load_farm(db_path: Path) -> tuple[int, int, int]:
         df = df.withColumn("datetime", to_timestamp("datetime")).withColumn(
             "metadata", expr("parse_json(metadata)")
         )
-        df.write.format("delta").mode("append").saveAsTable(f"{CATALOG_SCHEMA}.events")
+        df.write.format("delta").mode("append").saveAsTable(f"{CATALOG_SCHEMA}.animal_events")
         n_events += len(rows)
 
     conn.close()

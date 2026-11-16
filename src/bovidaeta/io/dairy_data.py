@@ -87,7 +87,7 @@ class DairyData:
 
         Args:
             catalog_schema: Fully qualified `catalog.schema` holding the
-                `herds`, `cows` and `events` tables, e.g. `"bovidaeta.farms"`.
+                `herds`, `cows` and `animal_events` tables, e.g. `"bovidaeta.farms"`.
             spark: Session to use. Defaults to the active one, which is
                 what you want in a notebook.
         """
@@ -120,7 +120,7 @@ class DairyData:
         device that is the difference between fitting in memory and not.
         On Delta it is larger still - the table holds every farm, and
         `subset_events` together with a datetime range lets the engine
-        skip whole partitions, since `events` is partitioned by
+        skip whole partitions, since `animal_events` is partitioned by
         `(event_type, event_year)`.
 
         Args:

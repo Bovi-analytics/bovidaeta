@@ -12,7 +12,7 @@
 -- Requires DBR 15.3+ (or a current serverless SQL warehouse) for VARIANT.
 --
 -- Set the target catalog and schema below first. The tables and views are
--- created there, and the views keep pointing at that schema's `events`
+-- created there, and the views keep pointing at that schema's `animal_events`
 -- table. Pass the same `catalog.schema` to `DairyData.from_delta(...)`.
 
 USE CATALOG bovidaeta;
@@ -57,14 +57,14 @@ CREATE TABLE IF NOT EXISTS cows (
   CONSTRAINT cows_pk PRIMARY KEY (animal_id, herd_id)
 ) USING DELTA;
 
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS animal_events (
   event_id    STRING NOT NULL,
   animal_id   STRING NOT NULL,
   event_type  STRING NOT NULL,
   datetime    TIMESTAMP NOT NULL,
   event_year  INT GENERATED ALWAYS AS (YEAR(datetime)),
   metadata    VARIANT,
-  CONSTRAINT events_pk PRIMARY KEY (event_id)
+  CONSTRAINT animal_events_pk PRIMARY KEY (event_id)
 ) USING DELTA
 PARTITIONED BY (event_type, event_year);
 
@@ -78,7 +78,7 @@ SELECT
   metadata:protein_percentage::DOUBLE  AS protein_percentage,
   metadata:scc::BIGINT                 AS scc,
   metadata:milking_yield::DOUBLE       AS milking_yield
-FROM events
+FROM animal_events
 WHERE event_type = 'MilkRecording';
 
 CREATE OR REPLACE VIEW diagnosis_v AS
@@ -92,5 +92,5 @@ SELECT
   metadata:confirmation_status::STRING          AS confirmation_status,
   metadata:diagnostic_source::STRING            AS diagnostic_source,
   metadata:notes::STRING                        AS notes
-FROM events
+FROM animal_events
 WHERE event_type = 'Diagnosis';

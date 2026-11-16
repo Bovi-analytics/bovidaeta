@@ -124,7 +124,7 @@ class _DeltaBackend(EventBackend):
         if cow_ids:
             conditions.append(self._in_clause("animal_id", cow_ids, "cow", args))
         if herd_ids:
-            # Events carry no herd column; membership lives in the cows
+            # animal_events carry no herd column; membership lives in the cows
             # bridge table, since a cow that moves farms keeps its
             # animal_id and gains a second row there.
             herd_filter = self._in_clause("herd_id", herd_ids, "herd", args)
@@ -132,7 +132,7 @@ class _DeltaBackend(EventBackend):
                 f"animal_id IN (SELECT animal_id FROM {self._table('cows')} WHERE {herd_filter})"
             )
 
-        query = f"SELECT {', '.join(select_cols)} FROM {self._table('events')}"
+        query = f"SELECT {', '.join(select_cols)} FROM {self._table('animal_events')}"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         return self.spark.sql(query, args=args)
