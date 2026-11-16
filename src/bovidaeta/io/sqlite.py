@@ -14,6 +14,20 @@ import polars as pl
 
 from .base import BASE_COLUMNS, CAST_TYPES, EventBackend
 
+# Polars type for each `subset_metadata` cast (see CAST_TYPES). DATE and
+# TIMESTAMP stay text: that is how SQLite stores them.
+_CAST_DTYPES: dict[str, pl.DataType] = {
+    "STRING": pl.String,
+    "BOOLEAN": pl.Int64,
+    "INT": pl.Int64,
+    "BIGINT": pl.Int64,
+    "FLOAT": pl.Float64,
+    "DOUBLE": pl.Float64,
+    "DECIMAL": pl.Float64,
+    "DATE": pl.String,
+    "TIMESTAMP": pl.String,
+}
+
 
 class _SQLiteBackend(EventBackend):
     name = "sqlite"
@@ -53,12 +67,30 @@ class _SQLiteBackend(EventBackend):
         conn.execute("PRAGMA query_only = 1;")
         return conn
 
-    def _query(self, query: str, params: list[str]) -> pl.DataFrame:
+    def _query(
+        self,
+        query: str,
+        params: list[str],
+        schema: dict[str, pl.DataType] | None = None,
+    ) -> pl.DataFrame:
+        """Run a query into a frame.
+
+        The driver hands rows over as Python values, and by default polars
+        guesses each column's type from the first 100. A metadata key that is
+        null in those (say `milk_date` on events from before it was recorded)
+        and set further down then fails the whole read, so the types the
+        caller knows are passed as `schema`, and the rest are inferred from
+        every row.
+        """
         conn = self._connect()
         try:
             conn.execute("PRAGMA busy_timeout = 5000;")
             df = pl.read_database(
-                query=query, connection=conn, execute_options={"parameters": params}
+                query=query,
+                connection=conn,
+                execute_options={"parameters": params},
+                schema_overrides=schema,
+                infer_schema_length=None,
             )
         finally:
             conn.close()
@@ -136,7 +168,9 @@ class _SQLiteBackend(EventBackend):
         query = f"SELECT {', '.join(select_cols)} FROM AnimalEvents"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-        return self._query(query, params)
+        schema = {col: pl.String for col in BASE_COLUMNS}
+        schema |= {key: _CAST_DTYPES[cast] for key, cast in (metadata or {}).items() if cast}
+        return self._query(query, params, schema)
 
     def load_cows(
         self,
