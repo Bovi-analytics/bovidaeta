@@ -2,7 +2,7 @@
 # If there's a paper describing bovidaeta, add it under `preferred-citation`.
 # Validate with: pipx run cffconvert --validate
 cff-version: 1.2.0
-message: "If you use bovidaeta in your research, please cite it as below."
+message: "If you use bovidaeta, please cite it as below."
 type: software
 title: "bovidaeta: a common data format for dairy cattle data"
 abstract: >-
@@ -10,31 +10,47 @@ abstract: >-
   timeline of events per cow), with Python data models, SQLite and Delta
   Lake storage, and a loader that reads both.
 authors:
-  - family-names: "Zoete"
-    name-particle: "de"
-    given-names: "Bart"
+  - family-names: Liu
+    given-names: Enhong
+    orcid: https://orcid.org/0000-0001-8608-9074
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Leerdam"
-    name-particle: "van"
-    given-names: "Meike"
+  - family-names: Leerdam
+    name-particle: van
+    given-names: Meike
+    orcid: https://orcid.org/0009-0003-4187-2112
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Blay"
-    given-names: "Ambrose"
+  - family-names: Sharma
+    given-names: Sumit
+    orcid: https://orcid.org/0000-0002-4824-7569
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Hu"
-    given-names: "Haowen"
+  - family-names: Yang
+    given-names: Haiyu
+    orcid: https://orcid.org/0009-0007-5125-4958
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Niu"
-    given-names: "Puchun"
+  - family-names: Zhang
+    given-names: Hanlu
+    orcid: https://orcid.org/0009-0007-2217-9186
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Sharma"
-    given-names: "Sumit"
+  - family-names: Niu
+    given-names: Puchun
+    orcid: https://orcid.org/0000-0001-6858-1284
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Zhang"
-    given-names: "Hanlu"
+  - family-names: Hu
+    given-names: Haowen
+    orcid: https://orcid.org/0009-0008-6538-8428
     affiliation: "Bovi-Analytics Lab, Cornell University"
-  - family-names: "Hostens"
-    given-names: "Miel"
+  - family-names: Hansen
+    given-names: Ed
+    orcid: https://orcid.org/0009-0005-1134-310X
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: Zoete
+    name-particle: de
+    given-names: Bart
+    orcid: https://orcid.org/0009-0009-3665-4325
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: Hostens
+    given-names: Miel
+    orcid: https://orcid.org/0000-0001-5376-976X
     affiliation: "Bovi-Analytics Lab, Cornell University"
   - name: "Bovi-Analytics Lab, Cornell University"
 repository-code: "https://github.com/Bovi-Analytics/bovidaeta"
@@ -46,5 +62,5 @@ keywords:
   - data format
   - precision livestock farming
 license: Apache-2.0
-version: "0.1.4"     # TODO(release-ci): let the release workflow keep this in sync
+version: "0.1.4" # TODO(release-ci): let the release workflow keep this in sync
 date-released: "2026-11-06"
