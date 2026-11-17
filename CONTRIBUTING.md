@@ -45,15 +45,25 @@ library features that are newer than that (for example `datetime.UTC`; use
    change.
 2. Add or update tests in `tests/`, and update the docs (README files,
    docstrings) if behaviour changes.
-3. Make sure `uv run pytest` passes.
+3. Make sure `uv run ruff check .` and `uv run pytest` pass.
 4. Open a pull request against `main`.
 
-<!-- TODO(release-ci): once version bumps are automated, describe the PR
-     title convention here, e.g. Conventional Commits:
-       feat: add HoofTrimming event type      -> minor release
-       fix: handle missing birth_date         -> patch release
-       docs: / test: / chore:                 -> no release
--->
+### Pull request titles
+
+Pull requests are squash-merged, so the PR title becomes the commit message
+on `main`. Titles follow [Conventional Commits](https://www.conventionalcommits.org/),
+which a CI check enforces, and they decide the next release:
+
+| Title | Release |
+| --- | --- |
+| `feat: add HoofTrimming event type` | minor (0.2.0 → 0.3.0) |
+| `fix: handle missing birth_date` | patch (0.2.0 → 0.2.1) |
+| `feat!: rename Cow.exit_date` | breaking change (minor while we're on 0.x) |
+| `docs:`, `test:`, `ci:`, `chore:`, `refactor:` | no release |
+
+Releases happen automatically when a PR that warrants one is merged: CI
+publishes the package to PyPI and creates a GitHub Release with notes
+listing the merged PRs.
 
 ### Changing the data format
 

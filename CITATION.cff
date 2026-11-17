@@ -62,5 +62,3 @@ keywords:
   - data format
   - precision livestock farming
 license: Apache-2.0
-version: "0.1.4" # TODO(release-ci): let the release workflow keep this in sync
-date-released: "2026-11-06"

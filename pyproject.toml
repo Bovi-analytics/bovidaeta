@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "bovidaeta"
-version = "0.1.4"
+dynamic = ["version"]  # from git tags, via setuptools-scm
 description = "A common data format for dairy cattle events, with loaders for SQLite and Delta Lake."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -71,7 +71,7 @@ Issues = "https://github.com/Bovi-Analytics/bovidaeta/issues"
 Changelog = "https://github.com/Bovi-Analytics/bovidaeta/releases"
 
 [dependency-groups]
-dev = ["pytest"]
+dev = ["pytest", "ruff==0.17.5"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -81,3 +81,30 @@ bovidaeta = ["schemas/*.sql", "py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]
+# Versions come from git tags (vX.Y.Z), created by the release workflow.
+# Untagged commits get a dev version like 0.2.1.dev3; drop the "+g<hash>"
+# suffix so those builds can be uploaded to TestPyPI.
+local_scheme = "no-local-version"
+fallback_version = "0.0.0"
+
+[tool.ruff]
+# Databricks notebook globals used in pipelines/ and examples/.
+builtins = ["dbutils", "display", "spark"]
+
+[tool.semantic_release]
+# Only used to work out the next version from Conventional Commit messages
+# and to create the tag + GitHub Release. Nothing is committed back to main.
+tag_format = "v{version}"
+commit_parser = "conventional"
+allow_zero_version = true
+major_on_zero = false
+build_command = ""
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.remote]
+type = "github"
