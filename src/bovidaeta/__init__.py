@@ -1,5 +1,8 @@
 """Top-level public API for bovidaeta."""
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _version
+
 from .cow import BreedPart, Cow
 from .enums import (
     AggregationPeriod,
@@ -59,8 +62,6 @@ from .lactation import (
     load_lactations,
     select_lactations,
 )
-
-from importlib.metadata import PackageNotFoundError, version as _version
 
 try:
     __version__ = _version("bovidaeta")
