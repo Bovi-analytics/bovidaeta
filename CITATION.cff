@@ -1,0 +1,50 @@
+# TODO(zenodo): after the first release, add `doi:` with the Zenodo concept DOI.
+# If there's a paper describing bovidaeta, add it under `preferred-citation`.
+# Validate with: pipx run cffconvert --validate
+cff-version: 1.2.0
+message: "If you use bovidaeta in your research, please cite it as below."
+type: software
+title: "bovidaeta: a common data format for dairy cattle data"
+abstract: >-
+  bovidaeta is a data format for dairy cattle data (herds, cows and a
+  timeline of events per cow), with Python data models, SQLite and Delta
+  Lake storage, and a loader that reads both.
+authors:
+  - family-names: "Zoete"
+    name-particle: "de"
+    given-names: "Bart"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Leerdam"
+    name-particle: "van"
+    given-names: "Meike"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Blay"
+    given-names: "Ambrose"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Hu"
+    given-names: "Haowen"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Niu"
+    given-names: "Puchun"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Sharma"
+    given-names: "Sumit"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Zhang"
+    given-names: "Hanlu"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - family-names: "Hostens"
+    given-names: "Miel"
+    affiliation: "Bovi-Analytics Lab, Cornell University"
+  - name: "Bovi-Analytics Lab, Cornell University"
+repository-code: "https://github.com/Bovi-Analytics/bovidaeta"
+url: "https://bovi-analytics.org/"
+keywords:
+  - dairy
+  - cattle
+  - livestock
+  - data format
+  - precision livestock farming
+license: Apache-2.0
+version: "0.1.4"     # TODO(release-ci): let the release workflow keep this in sync
+date-released: "2026-11-06"
