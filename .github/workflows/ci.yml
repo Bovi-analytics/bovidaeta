@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Ruff
+        run: uv run --frozen --only-group dev ruff check --output-format=github .
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # setuptools-scm needs the tags to work out the version
+      - uses: astral-sh/setup-uv@v6
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Check package metadata (renders on PyPI)
+        run: uvx twine check --strict dist/*
+
+  test:
+    name: test (${{ matrix.python }}${{ matrix.resolution == 'lowest-direct' && ', lowest deps' || '' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        resolution: [highest]
+        include:
+          # Oldest versions our dependency bounds allow, on the oldest Python.
+          - python: "3.10"
+            resolution: lowest-direct
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+      UV_RESOLUTION: ${{ matrix.resolution }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Smoke test
+        run: uv run --isolated --no-project --with . python .github/scripts/smoke_test.py
+      - name: Unit tests
+        if: hashFiles('tests/**/*.py') != ''
+        run: uv run --isolated --no-project --with . --with "pytest>=8" pytest -q
+
+  # Single check to mark as required in branch protection, so the matrix
+  # can change without updating the protection rules.
+  ci-ok:
+    if: always()
+    needs: [lint, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All CI jobs passed
+        run: |
+          [[ "${{ needs.lint.result }}" == "success" && \
+             "${{ needs.build.result }}" == "success" && \
+             "${{ needs.test.result }}" == "success" ]]
