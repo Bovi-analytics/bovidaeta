@@ -10,13 +10,23 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
+# Same people, in the same order, as CITATION.cff (without the lab entry,
+# whose comma would be ambiguous in the comma-separated Author field).
 authors = [
-  # TODO(authors): fill in name/email of each author (or the lab itself).
-  { name = "Bovi-Analytics Lab, Cornell University" },
+  { name = "Enhong Liu" },
+  { name = "Meike van Leerdam" },
+  { name = "Sumit Sharma" },
+  { name = "Haiyu Yang" },
+  { name = "Hanlu Zhang" },
+  { name = "Puchun Niu" },
+  { name = "Haowen Hu" },
+  { name = "Lipika Mallikarjuna" },
+  { name = "Ed Hansen" },
+  { name = "Bart de Zoete" },
+  { name = "Miel Hostens" },
 ]
 maintainers = [
-  # TODO(maintainers): the people who triage issues and cut releases.
-  { name = "TODO" },
+  { name = "Bart de Zoete", email = "bd482@cornell.edu" },
 ]
 keywords = [
   "dairy",
