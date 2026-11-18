@@ -2,6 +2,11 @@
 
 # bovidaeta
 
+[![PyPI](https://img.shields.io/pypi/v/bovidaeta)](https://pypi.org/project/bovidaeta/)
+[![Python versions](https://img.shields.io/pypi/pyversions/bovidaeta)](https://pypi.org/project/bovidaeta/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24348212.svg)](https://doi.org/10.5281/zenodo.24348212)
+[![License](https://img.shields.io/pypi/l/bovidaeta)](https://github.com/Bovi-Analytics/bovidaeta/blob/main/LICENSE)
+
 **A common data format for dairy cattle data.**
 
 Dairy data comes from many places: herd management software, milk recording
@@ -179,7 +184,9 @@ a development environment and open a pull request.
 
 ## Citing
 
-If you use bovidaeta in your research, please cite it. See
+If you use bovidaeta in your research, please cite it using its DOI,
+[10.5281/zenodo.24348212](https://doi.org/10.5281/zenodo.24348212), which always points to the latest release
+(each release also has its own DOI on Zenodo). See
 [CITATION.cff](https://github.com/Bovi-Analytics/bovidaeta/blob/main/CITATION.cff), or use "Cite this repository" on GitHub.
 
 ## License
