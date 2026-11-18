@@ -65,7 +65,9 @@ from .lactation import (
 
 try:
     __version__ = _version("bovidaeta")
-except PackageNotFoundError:  # pragma: no cover - running from a source tree without installing
+except (
+    PackageNotFoundError
+):  # pragma: no cover - running from a source tree without installing
     __version__ = "0.0.0"
 
 __all__ = [

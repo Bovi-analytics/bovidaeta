@@ -67,7 +67,9 @@ def normalise_farm_numbers(subset: Iterable[int | str] | None) -> list[int] | No
         try:
             numbers.append(int(str(s).strip()))
         except ValueError:
-            raise ValueError(f"Farm number must be a whole number, got {s!r}.") from None
+            raise ValueError(
+                f"Farm number must be a whole number, got {s!r}."
+            ) from None
     return numbers
 
 

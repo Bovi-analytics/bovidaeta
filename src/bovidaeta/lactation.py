@@ -130,7 +130,13 @@ def _day_number(column: str) -> nw.Expr:
     on Spark. The leap days before year `y` are `y//4 - y//100 + y//400`.
     """
     year = nw.col(column).dt.year().cast(nw.Int64) - 1
-    return 365 * year + year // 4 - year // 100 + year // 400 + nw.col(column).dt.ordinal_day()
+    return (
+        365 * year
+        + year // 4
+        - year // 100
+        + year // 400
+        + nw.col(column).dt.ordinal_day()
+    )
 
 
 def load_lactations(
@@ -179,7 +185,9 @@ def load_lactations(
     lactations = (
         events.with_columns(_closer=(~is_calving).cast(nw.Int8))
         .with_columns(
-            lactation_number=is_calving.cast(nw.Int32).cum_sum().over("animal_id", order_by=order),
+            lactation_number=is_calving.cast(nw.Int32)
+            .cum_sum()
+            .over("animal_id", order_by=order),
             end_date=nw.col("date").shift(-1).over("animal_id", order_by=order),
             next_event=nw.col("event_type").shift(-1).over("animal_id", order_by=order),
         )
@@ -215,7 +223,9 @@ def select_lactations(
 
     frame = nw.from_native(lactations)
     if lactation == "latest":
-        condition = nw.col("lactation_number") == nw.col("lactation_number").max().over("animal_id")
+        condition = nw.col("lactation_number") == nw.col("lactation_number").max().over(
+            "animal_id"
+        )
     elif isinstance(lactation, int):
         condition = nw.col("lactation_number") == lactation
     else:
@@ -223,18 +233,24 @@ def select_lactations(
     return frame.filter(condition).to_native()
 
 
-def _bounds(dts_start: date | None, dts_end: date | None) -> tuple[datetime | None, datetime | None]:
+def _bounds(
+    dts_start: date | None, dts_end: date | None
+) -> tuple[datetime | None, datetime | None]:
     """Datetime bounds for reading the days `dts_start`..`dts_end`.
 
     A day longer on each side: a milking's day can differ from the date of
     its `datetime`, and a day read only in part would look short.
     """
-    lo = datetime.combine(dts_start - timedelta(days=1), time.min) if dts_start else None
+    lo = (
+        datetime.combine(dts_start - timedelta(days=1), time.min) if dts_start else None
+    )
     hi = datetime.combine(dts_end + timedelta(days=1), time.max) if dts_end else None
     return lo, hi
 
 
-def _in_days(frame: nw.LazyFrame, dts_start: date | None, dts_end: date | None) -> nw.LazyFrame:
+def _in_days(
+    frame: nw.LazyFrame, dts_start: date | None, dts_end: date | None
+) -> nw.LazyFrame:
     if dts_start:
         frame = frame.filter(nw.col("date") >= nw.lit(dts_start, dtype=nw.Date))
     if dts_end:
@@ -283,15 +299,24 @@ def _yields(
         # aggregation_length defaults to 1 in the model, so a missing one is
         # daily. Cast because an empty SQLite result types every column as text.
         events = events.filter(
-            (nw.col("aggregation_period").cast(nw.String) == AggregationPeriod.DAY.value)
+            (
+                nw.col("aggregation_period").cast(nw.String)
+                == AggregationPeriod.DAY.value
+            )
             & (nw.col("aggregation_length").cast(nw.Int64).fill_null(1) == 1)
         )
-    day = _milk_day(events) if event_type == EventType.MILK_METER_YIELDS else _to_date(events)
+    day = (
+        _milk_day(events)
+        if event_type == EventType.MILK_METER_YIELDS
+        else _to_date(events)
+    )
     records = events.select(
         "animal_id", day, nw.col("milking_yield").cast(nw.Float64)
     ).drop_nulls("milking_yield")
     if event_type == EventType.MILK_METER_YIELDS:
-        records = records.group_by("animal_id", "date").agg(nw.col("milking_yield").sum())
+        records = records.group_by("animal_id", "date").agg(
+            nw.col("milking_yield").sum()
+        )
     return _in_days(records, dts_start, dts_end), eager
 
 
@@ -304,7 +329,9 @@ def _daily_milk_yields(
     prefer: str,
 ) -> tuple[nw.LazyFrame, bool]:
     if prefer not in (SOURCE_DAILY_TOTAL, SOURCE_MILKINGS):
-        raise ValueError(f"prefer must be {SOURCE_DAILY_TOTAL!r} or {SOURCE_MILKINGS!r}, got {prefer!r}")
+        raise ValueError(
+            f"prefer must be {SOURCE_DAILY_TOTAL!r} or {SOURCE_MILKINGS!r}, got {prefer!r}"
+        )
 
     scope = (subset_cows, subset_herds, dts_start, dts_end)
     milkings, eager = _yields(data, EventType.MILK_METER_YIELDS, *scope)
@@ -316,8 +343,12 @@ def _daily_milk_yields(
     days = (
         nw.concat(
             [
-                milkings.select("animal_id", "date", milkings=nw.col("milking_yield"), total=none),
-                totals.select("animal_id", "date", milkings=none, total=nw.col("milking_yield")),
+                milkings.select(
+                    "animal_id", "date", milkings=nw.col("milking_yield"), total=none
+                ),
+                totals.select(
+                    "animal_id", "date", milkings=none, total=nw.col("milking_yield")
+                ),
             ],
             how="vertical",
         )
@@ -335,13 +366,18 @@ def _daily_milk_yields(
     if prefer == SOURCE_DAILY_TOTAL:
         use_total = has_total
     else:
-        complete = (nw.col("milkings") - nw.col("total")).abs() <= MEASURED_TOLERANCE * nw.col("total")
+        complete = (
+            nw.col("milkings") - nw.col("total")
+        ).abs() <= MEASURED_TOLERANCE * nw.col("total")
         days = days.filter(~has_milkings | ~has_total | complete)
         use_total = ~has_milkings
     out = days.select(
         "animal_id",
         "date",
-        nw.when(use_total).then(nw.col("total")).otherwise(nw.col("milkings")).alias("milking_yield"),
+        nw.when(use_total)
+        .then(nw.col("total"))
+        .otherwise(nw.col("milkings"))
+        .alias("milking_yield"),
         nw.when(use_total)
         .then(nw.lit(SOURCE_DAILY_TOTAL))
         .otherwise(nw.lit(SOURCE_MILKINGS))
@@ -437,12 +473,18 @@ def load_lactation_records(
         Delta.
     """
     if event_type is not None and event_type not in YIELD_EVENTS:
-        raise ValueError(f"event_type must be None or one of {YIELD_EVENTS}, got {event_type!r}")
+        raise ValueError(
+            f"event_type must be None or one of {YIELD_EVENTS}, got {event_type!r}"
+        )
 
     if lactations is None:
-        lactations = load_lactations(data, subset_cows=subset_cows, subset_herds=subset_herds)
+        lactations = load_lactations(
+            data, subset_cows=subset_cows, subset_herds=subset_herds
+        )
     lactations, eager = _lazy(lactations)
-    lactations = lactations.select("animal_id", "lactation_number", "calving_date", "end_date")
+    lactations = lactations.select(
+        "animal_id", "lactation_number", "calving_date", "end_date"
+    )
 
     # One small query, worth it: it bounds the events read below, which on
     # Delta lets whole years of partitions be skipped.
@@ -459,9 +501,13 @@ def load_lactation_records(
         return _native(empty.select(*RECORD_SCHEMA), eager)
 
     if event_type is None:
-        records, _ = _daily_milk_yields(data, subset_cows, subset_herds, first_calving, None, prefer)
+        records, _ = _daily_milk_yields(
+            data, subset_cows, subset_herds, first_calving, None, prefer
+        )
     else:
-        records, _ = _yields(data, event_type, subset_cows, subset_herds, first_calving, None)
+        records, _ = _yields(
+            data, event_type, subset_cows, subset_herds, first_calving, None
+        )
         source = {
             EventType.MILK_RECORDING: SOURCE_MILK_RECORDING,
             EventType.MILK_METER_YIELDS: SOURCE_MILKINGS,
@@ -485,7 +531,9 @@ def load_lactation_records(
     if max_dim is not None:
         out = out.filter(nw.col("dim") <= max_dim)
 
-    return _native(out.select(*RECORD_SCHEMA).sort("animal_id", "lactation_number", "dim"), eager)
+    return _native(
+        out.select(*RECORD_SCHEMA).sort("animal_id", "lactation_number", "dim"), eager
+    )
 
 
 __all__ = [

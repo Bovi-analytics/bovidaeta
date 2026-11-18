@@ -101,6 +101,7 @@ class Herd(BaseModel):
         default=None,
         description="Telephone number of the farmer.",
     )
+
     @field_validator("country_code")
     @classmethod
     def normalize_country_code(cls, value: str | None) -> str | None:

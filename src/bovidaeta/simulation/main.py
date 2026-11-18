@@ -26,6 +26,7 @@ from bovidaeta.schemas import SQLITE_SCHEMA, read_schema
 DATA_DIR = Path.home() / "nsf-data/"
 DB_PATH = DATA_DIR / "dairy_farm.db"
 
+
 def _uuid7() -> uuid.UUID:
     """A time-ordered UUID (RFC 9562 version 7) for event ids.
 
@@ -655,7 +656,10 @@ class SimCow:
 
 class Farm:
     def __init__(
-        self, conf: SimConfig, db_path: Path | str = DB_PATH, overwrite: bool | None = None
+        self,
+        conf: SimConfig,
+        db_path: Path | str = DB_PATH,
+        overwrite: bool | None = None,
     ):
         """`overwrite`: True to wipe an existing database, False to add to it, None to ask."""
         global FARM_NUMBERS
@@ -826,7 +830,9 @@ class Farm:
         # than a decade of the future: real farm data is historical, and
         # analyses filter on past years.
         end_day = self.conf.sim_end_date or datetime.now(timezone.utc).date()
-        end_date = datetime(end_day.year, end_day.month, end_day.day, tzinfo=timezone.utc)
+        end_date = datetime(
+            end_day.year, end_day.month, end_day.day, tzinfo=timezone.utc
+        )
         current_date = end_date - timedelta(days=int(self.conf.sim_years * 365))
         date_i = 1
 
