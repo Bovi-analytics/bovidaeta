@@ -17,6 +17,7 @@ if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     import polars as pl
     from pyspark.sql import DataFrame, SparkSession
 
+
 def _resolve_spark() -> "SparkSession":
     try:
         from pyspark.sql import SparkSession

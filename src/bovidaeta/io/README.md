@@ -91,9 +91,7 @@ Only _top-level_ keys can be requested. Metadata that nests (for example
 
 ```python
 # polars, from_sqlite
-df = data.load_events(
-    subset_events=[EventType.DIAGNOSIS], subset_metadata=["disease"]
-)
+df = data.load_events(subset_events=[EventType.DIAGNOSIS], subset_metadata=["disease"])
 df = df.with_columns(
     pl.col("disease")
     .map_elements(lambda s: json.loads(s)["disease_code"], return_dtype=pl.Utf8)

@@ -45,7 +45,8 @@ library features that are newer than that (for example `datetime.UTC`; use
    change.
 2. Add or update tests in `tests/`, and update the docs (README files,
    docstrings) if behaviour changes.
-3. Make sure `uv run ruff check .` and `uv run pytest` pass.
+3. Run `uv run ruff format .`, and make sure `uv run ruff check .` and
+   `uv run pytest` pass.
 4. Open a pull request against `main`.
 
 ### Pull request titles

@@ -169,7 +169,9 @@ class _SQLiteBackend(EventBackend):
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         schema = {col: pl.String for col in BASE_COLUMNS}
-        schema |= {key: _CAST_DTYPES[cast] for key, cast in (metadata or {}).items() if cast}
+        schema |= {
+            key: _CAST_DTYPES[cast] for key, cast in (metadata or {}).items() if cast
+        }
         return self._query(query, params, schema)
 
     def load_cows(

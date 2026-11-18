@@ -17,8 +17,20 @@ print(f"bovidaeta {bovidaeta.__version__} on Python {sys.version.split()[0]}")
 with tempfile.TemporaryDirectory() as tmp:
     db = Path(tmp) / "farm.db"
     subprocess.run(
-        [sys.executable, "-m", "bovidaeta.simulation",
-         "--animals", "40", "--years", "1", "--db", str(db), "--seed", "1", "--yes"],
+        [
+            sys.executable,
+            "-m",
+            "bovidaeta.simulation",
+            "--animals",
+            "40",
+            "--years",
+            "1",
+            "--db",
+            str(db),
+            "--seed",
+            "1",
+            "--yes",
+        ],
         check=True,
         stdout=subprocess.DEVNULL,
     )
@@ -32,8 +44,10 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     lactations = load_lactations(data)
 
-    print(f"events={events.height} cows={cows.height} herds={herds.height} "
-          f"milk_recordings={milk.height} lactations={lactations.height}")
+    print(
+        f"events={events.height} cows={cows.height} herds={herds.height} "
+        f"milk_recordings={milk.height} lactations={lactations.height}"
+    )
     assert events.height > 0 and cows.height > 0 and herds.height > 0
     assert milk.height > 0 and "milking_yield" in milk.columns
     assert lactations.height > 0

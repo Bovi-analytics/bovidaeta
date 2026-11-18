@@ -148,17 +148,19 @@ def load_farm(db_path: Path) -> tuple[int, int, int]:
     conn.row_factory = sqlite3.Row
 
     herds = [dict(row) for row in conn.execute("SELECT * FROM Herds")]
-    spark.createDataFrame(herds, schema=HERD_SCHEMA).write.format("delta").mode("append").saveAsTable(
-        f"{CATALOG_SCHEMA}.herds"
-    )
+    spark.createDataFrame(herds, schema=HERD_SCHEMA).write.format("delta").mode(
+        "append"
+    ).saveAsTable(f"{CATALOG_SCHEMA}.herds")
 
     cows = [cow_row(row) for row in conn.execute("SELECT * FROM Cows")]
-    spark.createDataFrame(cows, schema=COW_SCHEMA).write.format("delta").mode("append").saveAsTable(
-        f"{CATALOG_SCHEMA}.cows"
-    )
+    spark.createDataFrame(cows, schema=COW_SCHEMA).write.format("delta").mode(
+        "append"
+    ).saveAsTable(f"{CATALOG_SCHEMA}.cows")
 
     n_events = 0
-    cur = conn.execute("SELECT event_id, animal_id, event_type, datetime, metadata FROM AnimalEvents")
+    cur = conn.execute(
+        "SELECT event_id, animal_id, event_type, datetime, metadata FROM AnimalEvents"
+    )
     while True:
         batch = cur.fetchmany(BATCH_SIZE)
         if not batch:
@@ -168,11 +170,14 @@ def load_farm(db_path: Path) -> tuple[int, int, int]:
         df = df.withColumn("datetime", to_timestamp("datetime")).withColumn(
             "metadata", expr("parse_json(metadata)")
         )
-        df.write.format("delta").mode("append").saveAsTable(f"{CATALOG_SCHEMA}.animal_events")
+        df.write.format("delta").mode("append").saveAsTable(
+            f"{CATALOG_SCHEMA}.animal_events"
+        )
         n_events += len(rows)
 
     conn.close()
     return len(herds), len(cows), n_events
+
 
 # COMMAND ----------
 
@@ -182,6 +187,10 @@ for i, db_path in enumerate(db_paths, 1):
     total_herds += n_herds
     total_cows += n_cows
     total_events += n_events
-    print(f"[{i}/{len(db_paths)}] {db_path.name}: {n_herds} herds, {n_cows} cows, {n_events:,} events")
+    print(
+        f"[{i}/{len(db_paths)}] {db_path.name}: {n_herds} herds, {n_cows} cows, {n_events:,} events"
+    )
 
-print(f"finished: {total_herds} herds, {total_cows} cows, {total_events:,} events across {len(db_paths)} farms")
+print(
+    f"finished: {total_herds} herds, {total_cows} cows, {total_events:,} events across {len(db_paths)} farms"
+)
