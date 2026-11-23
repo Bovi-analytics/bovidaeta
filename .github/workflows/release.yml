@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - id: plan
         env:
           TARGET: ${{ inputs.target || 'pypi' }}
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - name: Build
         env:
           SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.plan.outputs.version }}
