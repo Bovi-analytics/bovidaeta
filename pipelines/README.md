@@ -5,7 +5,10 @@ from them. Notebook-format scripts, run in Databricks.
 
 - **`sqlite_to_delta.py`** — reads a volume folder of per-farm
   `dairy_farm_*.db` files and appends their `Herds` / `Cows` / `AnimalEvents`
-  rows into the Delta tables. Parameterised by `farms_dir` and
+  / `Studies` / `StudyAnimals` rows into the Delta tables (the study tables
+  and `study_id` are empty for farm data). Files created before studies were
+  added need migrating first; see
+  [`schemas/README.md`](../src/bovidaeta/schemas/README.md#migrating-existing-databases). Parameterised by `farms_dir` and
   `catalog_schema` widgets; nothing in it is specific to one dataset.
 
   Create the tables first by running

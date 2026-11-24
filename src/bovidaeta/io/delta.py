@@ -11,7 +11,13 @@ per-farm SQLite exports by `pipelines/sqlite_to_delta.py`.
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from .base import BASE_COLUMNS, EventBackend, validate_identifier
+from .base import (
+    BASE_COLUMNS,
+    STUDY_ANIMAL_COLUMNS,
+    STUDY_COLUMNS,
+    EventBackend,
+    validate_identifier,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     import polars as pl
@@ -95,6 +101,7 @@ class _DeltaBackend(EventBackend):
         metadata: dict[str, str | None] | None,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
+        study_ids: list[str] | None,
     ) -> "DataFrame":
         select_cols = list(BASE_COLUMNS)
         if metadata:
@@ -132,6 +139,10 @@ class _DeltaBackend(EventBackend):
             conditions.append(
                 f"animal_id IN (SELECT animal_id FROM {self._table('cows')} WHERE {herd_filter})"
             )
+        if study_ids:
+            # A plain top-level column, so Delta can skip files on its
+            # min/max statistics.
+            conditions.append(self._in_clause("study_id", study_ids, "study", args))
 
         query = f"SELECT {', '.join(select_cols)} FROM {self._table('animal_events')}"
         if conditions:
@@ -165,6 +176,21 @@ class _DeltaBackend(EventBackend):
         args: dict[str, Any] = {}
         if herd_ids:
             query += " WHERE " + self._in_clause("herd_id", herd_ids, "herd", args)
+        return self.spark.sql(query, args=args)
+
+    def load_studies(self, study_ids: list[str] | None) -> "DataFrame":
+        query = f"SELECT {', '.join(STUDY_COLUMNS)} FROM {self._table('studies')}"
+        args: dict[str, Any] = {}
+        if study_ids:
+            query += " WHERE " + self._in_clause("study_id", study_ids, "study", args)
+        return self.spark.sql(query, args=args)
+
+    def load_study_animals(self, study_ids: list[str] | None) -> "DataFrame":
+        cols = ", ".join(STUDY_ANIMAL_COLUMNS)
+        query = f"SELECT {cols} FROM {self._table('study_animals')}"
+        args: dict[str, Any] = {}
+        if study_ids:
+            query += " WHERE " + self._in_clause("study_id", study_ids, "study", args)
         return self.spark.sql(query, args=args)
 
 

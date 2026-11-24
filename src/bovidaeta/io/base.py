@@ -18,7 +18,30 @@ from typing import Any
 from ..enums import EventType
 
 # Columns every backend returns, in this order, before any metadata columns.
-BASE_COLUMNS: tuple[str, ...] = ("event_id", "animal_id", "event_type", "datetime")
+# `study_id` is null for farm data.
+BASE_COLUMNS: tuple[str, ...] = (
+    "event_id",
+    "animal_id",
+    "event_type",
+    "datetime",
+    "study_id",
+)
+
+# Columns of the studies and study-animals tables, in the order returned.
+STUDY_COLUMNS: tuple[str, ...] = (
+    "study_id",
+    "project",
+    "name",
+    "description",
+    "start_date",
+    "end_date",
+    "doi_or_protocol_url",
+    "open_data",
+    "license",
+    "credit_required",
+    "contributors",
+)
+STUDY_ANIMAL_COLUMNS: tuple[str, ...] = ("study_id", "animal_id", "study_group")
 
 # Characters allowed in a metadata key we are willing to interpolate into a
 # query. Keys come from the caller, and neither SQLite's `json_extract`
@@ -52,10 +75,14 @@ def normalise_event_types(
 
 
 def normalise_ids(subset: Iterable[str] | None) -> list[str] | None:
-    """Accept any iterable of id strings (including UUIDs); return a list of str."""
-    if not subset:
+    """Accept any iterable of id strings (including UUIDs); return a list of str.
+
+    Iterated rather than tested for truth, so a polars `Series` (say the
+    `animal_id` column of `load_study_animals`) can be passed as it is.
+    """
+    if subset is None:
         return None
-    return [str(s) for s in subset]
+    return [str(s) for s in subset] or None
 
 
 def normalise_farm_numbers(subset: Iterable[int | str] | None) -> list[int] | None:
@@ -153,6 +180,7 @@ class EventBackend(ABC):
         metadata: dict[str, str | None] | None,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
+        study_ids: list[str] | None,
     ) -> Any: ...
 
     @abstractmethod
@@ -165,3 +193,9 @@ class EventBackend(ABC):
 
     @abstractmethod
     def load_herds(self, herd_ids: list[str] | None) -> Any: ...
+
+    @abstractmethod
+    def load_studies(self, study_ids: list[str] | None) -> Any: ...
+
+    @abstractmethod
+    def load_study_animals(self, study_ids: list[str] | None) -> Any: ...

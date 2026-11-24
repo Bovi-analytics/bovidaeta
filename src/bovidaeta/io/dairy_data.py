@@ -20,7 +20,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class DairyData:
-    """Load events, cows and herds, from whichever store they live in.
+    """Load events, cows, herds and studies, from whichever store they live in.
 
     The same data is kept two ways, and one class reads both:
 
@@ -111,10 +111,11 @@ class DairyData:
         subset_metadata: Iterable[str] | Mapping[str, str] | None = None,
         subset_cows: Iterable[str] | None = None,
         subset_herds: Iterable[str] | None = None,
+        subset_studies: Iterable[str] | None = None,
     ) -> Any:
         """Load events, filtered.
 
-        All six filters are optional and combine with AND. Using them is
+        All seven filters are optional and combine with AND. Using them is
         strongly preferred over loading everything and filtering in
         memory: they decide what gets read, not what is kept. On a farm
         device that is the difference between fitting in memory and not.
@@ -135,11 +136,16 @@ class DairyData:
             subset_cows: Only these `animal_id`s.
             subset_herds: Only cows in these `herd_id`s, resolved through
                 the cows table.
+            subset_studies: Only events recorded by these `study_id`s.
+                This leaves out farm data (whose `study_id` is null) and
+                anything the same animals had recorded in other studies; for
+                an animal's full history, pass the animals of a study (see
+                `load_study_animals`) as `subset_cows` instead.
 
         Returns:
             One row per event, with columns `event_id`, `animal_id`,
-            `event_type`, `datetime`, then either `metadata` or one column
-            per requested key. A polars `DataFrame` from SQLite, a Spark
+            `event_type`, `datetime`, `study_id` (null for farm data), then
+            either `metadata` or one column per requested key. A polars `DataFrame` from SQLite, a Spark
             `DataFrame` from Delta.
         """
         dts_start, dts_end = validate_datetime_range(dts_start, dts_end)
@@ -150,6 +156,7 @@ class DairyData:
             metadata=normalise_metadata(subset_metadata),
             cow_ids=normalise_ids(subset_cows),
             herd_ids=normalise_ids(subset_herds),
+            study_ids=normalise_ids(subset_studies),
         )
 
     def load_cows(
@@ -186,3 +193,33 @@ class DairyData:
     def load_herds(self, subset_herds: Iterable[str] | None = None) -> Any:
         """Load herds. A farm database holds one; the Delta table holds all."""
         return self._backend.load_herds(herd_ids=normalise_ids(subset_herds))
+
+    def load_studies(self, subset_studies: Iterable[str] | None = None) -> Any:
+        """Load research studies. Empty for farm data.
+
+        Columns as in `bovidaeta.Study`: `study_id`, `project`, `name`,
+        `description`, `start_date`, `end_date`, `doi_or_protocol_url`,
+        `open_data`, `license`, `credit_required`, `contributors`. Dates are
+        ISO-8601 strings from SQLite and `DATE`s from Delta.
+
+        Args:
+            subset_studies: Only these `study_id`s.
+        """
+        return self._backend.load_studies(study_ids=normalise_ids(subset_studies))
+
+    def load_study_animals(self, subset_studies: Iterable[str] | None = None) -> Any:
+        """Load which animals took part in which study.
+
+        Columns `study_id`, `animal_id`, `study_group` (e.g. the treatment
+        arm). An animal in several studies has a row per study. To get the
+        full history of a study's animals, pass their ids on:
+
+        ```python
+        animals = data.load_study_animals(subset_studies=[study_id])
+        events = data.load_events(subset_cows=animals["animal_id"])  # polars
+        ```
+
+        Args:
+            subset_studies: Only these `study_id`s.
+        """
+        return self._backend.load_study_animals(study_ids=normalise_ids(subset_studies))

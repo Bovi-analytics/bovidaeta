@@ -12,7 +12,13 @@ from urllib.parse import quote
 
 import polars as pl
 
-from .base import BASE_COLUMNS, CAST_TYPES, EventBackend
+from .base import (
+    BASE_COLUMNS,
+    CAST_TYPES,
+    STUDY_ANIMAL_COLUMNS,
+    STUDY_COLUMNS,
+    EventBackend,
+)
 
 # Polars type for each `subset_metadata` cast (see CAST_TYPES). DATE and
 # TIMESTAMP stay text: that is how SQLite stores them.
@@ -136,6 +142,7 @@ class _SQLiteBackend(EventBackend):
         metadata: dict[str, str | None] | None,
         cow_ids: list[str] | None,
         herd_ids: list[str] | None,
+        study_ids: list[str] | None,
     ) -> pl.DataFrame:
         select_cols = list(BASE_COLUMNS)
         if metadata:
@@ -164,6 +171,8 @@ class _SQLiteBackend(EventBackend):
             conditions.append(
                 f"animal_id IN (SELECT animal_id FROM Cows WHERE {herd_filter})"
             )
+        if study_ids:
+            conditions.append(self._in_clause("study_id", study_ids, params))
 
         query = f"SELECT {', '.join(select_cols)} FROM AnimalEvents"
         if conditions:
@@ -208,3 +217,23 @@ class _SQLiteBackend(EventBackend):
         if herd_ids:
             query += " WHERE " + self._in_clause("herd_id", herd_ids, params)
         return self._query(query, params)
+
+    def load_studies(self, study_ids: list[str] | None) -> pl.DataFrame:
+        query = f"SELECT {', '.join(STUDY_COLUMNS)} FROM Studies"
+        params: list[str] = []
+        if study_ids:
+            query += " WHERE " + self._in_clause("study_id", study_ids, params)
+        # SQLite keeps booleans as 0/1; return them as booleans, like Delta.
+        flags = ("open_data", "credit_required")
+        schema = {col: pl.String for col in STUDY_COLUMNS}
+        schema |= {col: pl.Int64 for col in flags}
+        df = self._query(query, params, schema)
+        return df.with_columns(pl.col(*flags).cast(pl.Boolean))
+
+    def load_study_animals(self, study_ids: list[str] | None) -> pl.DataFrame:
+        query = f"SELECT {', '.join(STUDY_ANIMAL_COLUMNS)} FROM StudyAnimals"
+        params: list[str] = []
+        if study_ids:
+            query += " WHERE " + self._in_clause("study_id", study_ids, params)
+        schema = {col: pl.String for col in STUDY_ANIMAL_COLUMNS}
+        return self._query(query, params, schema)

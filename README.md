@@ -23,12 +23,14 @@ at Cornell University.
 
 - **Data models**: [pydantic](https://docs.pydantic.dev/) models for herds,
   cows and events, plus typed metadata for each event type, so data is
-  validated as you write it.
+  validated as you write it. Data from research studies fits in too:
+  `Study` and `StudyAnimal` describe a study and its animals, and events
+  record the study they came from.
 - **Two storage formats**: one SQLite file per farm (on a laptop or an edge
   device on the farm), or Delta tables holding many farms (in Databricks).
   The table definitions ship with the package.
 - **`DairyData`**: one loader for both stores, with filters for date range,
-  event type, cows and herds; so you don't need to write SQL.
+  event type, cows, herds and studies; so you don't need to write SQL.
 - **Lactation helpers**: derive lactations and days in milk from the
   events.
 - **A farm simulator**: generates a realistic-looking farm database, so
@@ -76,8 +78,8 @@ milk = data.load_events(
 print(milk.head())  # a polars DataFrame
 ```
 
-`load_cows()` and `load_herds()` work the same way. Use the filters: farm
-event tables get large fast.
+`load_cows()`, `load_herds()`, `load_studies()` and `load_study_animals()`
+work the same way. Use the filters: farm event tables get large fast.
 
 ### 3. Work with lactations
 
@@ -161,17 +163,18 @@ the details.
   [`event_metadata.py`](https://github.com/Bovi-Analytics/bovidaeta/blob/main/src/bovidaeta/event_metadata.py): every event type
   and its metadata fields
 - [`schemas/`](https://github.com/Bovi-Analytics/bovidaeta/tree/main/src/bovidaeta/schemas): the SQLite and Delta table
-  definitions
+  definitions, and migrations for databases created with an older version
 
 ## Repository layout
 
 ```
 src/bovidaeta/
 ├── cow.py, herd.py, event.py,   data models
-│   event_metadata.py, enums.py
+│   study.py, event_metadata.py,
+│   enums.py
 ├── io/                          DairyData, one backend per store
 ├── lactation.py                 lactations and days in milk
-├── schemas/                     SQLite and Delta table definitions
+├── schemas/                     SQLite and Delta table definitions, migrations
 └── simulation/                  farm simulator
 examples/                        runnable walkthroughs
 pipelines/                       SQLite -> Delta load job (Databricks)

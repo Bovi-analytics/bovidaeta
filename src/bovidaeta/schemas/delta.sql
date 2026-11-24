@@ -14,6 +14,13 @@
 -- Set the target catalog and schema below first. The tables and views are
 -- created there, and the views keep pointing at that schema's `animal_events`
 -- table. Pass the same `catalog.schema` to `DairyData.from_delta(...)`.
+--
+-- `studies` / `study_animals` hold research-study data (see
+-- `bovidaeta.Study`) and are empty for farm data, as is
+-- `animal_events.study_id`.
+--
+-- Changing this file? Existing tables are not recreated, so ship a
+-- migration in `migrations/` as well (see the README next to this file).
 
 USE CATALOG bovidaeta;
 CREATE SCHEMA IF NOT EXISTS farms;
@@ -64,9 +71,39 @@ CREATE TABLE IF NOT EXISTS animal_events (
   datetime    TIMESTAMP NOT NULL,
   event_year  INT GENERATED ALWAYS AS (YEAR(datetime)),
   metadata    VARIANT,
+  -- The study that recorded the event; NULL for farm data. A top-level column
+  -- (not inside metadata) so Delta's file statistics can skip on it. Last, so
+  -- a new table has the same column order as a migrated one.
+  study_id    STRING,
   CONSTRAINT animal_events_pk PRIMARY KEY (event_id)
 ) USING DELTA
 PARTITIONED BY (event_type, event_year);
+
+-- Research studies, for example the studies of the GEMS project. Empty for
+-- farm data.
+CREATE TABLE IF NOT EXISTS studies (
+  study_id             STRING NOT NULL,
+  project              STRING,
+  name                 STRING,
+  description          STRING,
+  start_date           DATE,
+  end_date             DATE,
+  doi_or_protocol_url  STRING,
+  open_data            BOOLEAN,
+  license              STRING,
+  credit_required      BOOLEAN,
+  contributors         STRING,
+  CONSTRAINT studies_pk PRIMARY KEY (study_id)
+) USING DELTA;
+
+-- Which animals took part in which study. One animal_id per real animal, so
+-- an animal in several studies has a row per study.
+CREATE TABLE IF NOT EXISTS study_animals (
+  study_id     STRING NOT NULL,
+  animal_id    STRING NOT NULL,
+  study_group  STRING,
+  CONSTRAINT study_animals_pk PRIMARY KEY (study_id, animal_id)
+) USING DELTA;
 
 -- Example typed convenience views - free to add/drop as event types come
 -- and go, since they cost no storage and need no data migration.

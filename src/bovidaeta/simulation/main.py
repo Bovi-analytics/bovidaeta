@@ -694,6 +694,8 @@ class Farm:
         cursor.execute("DROP TABLE IF EXISTS AnimalEvents")
         cursor.execute("DROP TABLE IF EXISTS Cows")
         cursor.execute("DROP TABLE IF EXISTS Herds")
+        cursor.execute("DROP TABLE IF EXISTS Studies")
+        cursor.execute("DROP TABLE IF EXISTS StudyAnimals")
         cursor.executescript(read_schema(SQLITE_SCHEMA))
         self.db_conn.commit()
 

@@ -34,6 +34,10 @@ class Event(BaseModel):
     datetime: AwareDatetime = Field(
         description="Datetime of the event.",
     )
+    study_id: UUID | None = Field(
+        default=None,
+        description="UUID identifier of the study that recorded the event; None for farm data.",
+    )
     metadata: dict[str, Any] | None = Field(
         default_factory=dict,
         description=("Event metadata, unique for each event type."),
