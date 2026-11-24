@@ -352,29 +352,6 @@ class MilkMeterYieldsMetadata(EventMetadataModel):
             "not start at midnight, e.g. a night session running past midnight (format: YYYY-MM-DD)."
         ),
     )
-    lactose_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of lactose in milk during the session, between 0 and 100.",
-    )
-    fat_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of fat in milk during the session, between 0 and 100.",
-    )
-    protein_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of protein in milk during the session, between 0 and 100.",
-    )
-    scc: int | None = Field(
-        default=None,
-        ge=0,
-        description="Somatic Cell Count during the session, an indicator of udder health. cells/ml raw milk",
-    )
 
 
 class AggregatedMilkMeterYieldsMetadata(EventMetadataModel):
@@ -405,29 +382,6 @@ class AggregatedMilkMeterYieldsMetadata(EventMetadataModel):
         default=None,
         ge=0,
         description="Total milk produced during the period, in kg (or liters).",
-    )
-    lactose_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of lactose in milk over the period (yield-weighted average), between 0 and 100.",
-    )
-    fat_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of fat in milk over the period (yield-weighted average), between 0 and 100.",
-    )
-    protein_percentage: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="Percentage of protein in milk over the period (yield-weighted average), between 0 and 100.",
-    )
-    scc: int | None = Field(
-        default=None,
-        ge=0,
-        description="Somatic Cell Count over the period (yield-weighted average), an indicator of udder health. cells/ml raw milk",
     )
     start_time: datetime | None = Field(
         default=None,
