@@ -16,8 +16,10 @@ from importlib.resources import files
 
 __all__ = [
     "DELTA_SCHEMA",
+    "DELTA_SIRE_EAR_TAG_MIGRATION",
     "DELTA_STUDIES_MIGRATION",
     "SQLITE_SCHEMA",
+    "SQLITE_SIRE_EAR_TAG_MIGRATION",
     "SQLITE_STUDIES_MIGRATION",
     "read_schema",
 ]
@@ -28,6 +30,10 @@ DELTA_SCHEMA = "delta.sql"
 # Adds studies (Studies/StudyAnimals tables, AnimalEvents.study_id).
 SQLITE_STUDIES_MIGRATION = "migrations/0001_studies.sqlite.sql"
 DELTA_STUDIES_MIGRATION = "migrations/0001_studies.delta.sql"
+
+# Drops Cows.sire_ear_tag.
+SQLITE_SIRE_EAR_TAG_MIGRATION = "migrations/0002_drop_sire_ear_tag.sqlite.sql"
+DELTA_SIRE_EAR_TAG_MIGRATION = "migrations/0002_drop_sire_ear_tag.delta.sql"
 
 
 def read_schema(name: str = SQLITE_SCHEMA) -> str:

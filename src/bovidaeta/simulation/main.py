@@ -734,12 +734,12 @@ class Farm:
         cursor = self.db_conn.cursor()
         cursor.execute(
             """
-            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO Cows (animal_id, herd_id, metadata)
+            VALUES (?, ?, ?)
             ON CONFLICT(animal_id) DO UPDATE SET
                 metadata = excluded.metadata
             """,
-            (cow.id, cow.herd_id, None, metadata),
+            (cow.id, cow.herd_id, metadata),
         )
 
     def _batch_write_cows(self, cows: list["SimCow"]):
@@ -748,7 +748,6 @@ class Farm:
             (
                 cow.id,
                 cow.herd_id,
-                None,  # sire_ear_tag: the simulation has no sires
                 json.dumps(
                     {
                         "birth_date": cow.birth_date,
@@ -767,8 +766,8 @@ class Farm:
         cursor = self.db_conn.cursor()
         cursor.executemany(
             """
-            INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO Cows (animal_id, herd_id, metadata)
+            VALUES (?, ?, ?)
             ON CONFLICT(animal_id) DO UPDATE SET
                 metadata = excluded.metadata
             """,

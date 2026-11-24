@@ -52,7 +52,6 @@ CREATE TABLE IF NOT EXISTS herds (
 CREATE TABLE IF NOT EXISTS cows (
   animal_id            STRING NOT NULL,
   herd_id              STRING NOT NULL,
-  sire_ear_tag         STRING,
   animal_ear_tag       STRING,
   animal_farm_number   BIGINT,
   animal_legal_id      STRING,

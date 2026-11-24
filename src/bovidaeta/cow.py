@@ -104,10 +104,6 @@ class Cow(BaseModel):
         default=None,
         description="UUID identifier of the animal's dam.",
     )
-    sire_ear_tag: str | None = Field(
-        default=None,
-        description="The animal's sire ear tag number.",
-    )
     sire_id: UUID | None = Field(
         default=None,
         description="UUID identifier of the animal's sire.",
