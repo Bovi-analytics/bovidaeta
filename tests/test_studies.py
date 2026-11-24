@@ -20,6 +20,7 @@ from bovidaeta.schemas import (
     DELTA_SCHEMA,
     DELTA_STUDIES_MIGRATION,
     SQLITE_SCHEMA,
+    SQLITE_SIRE_EAR_TAG_MIGRATION,
     SQLITE_STUDIES_MIGRATION,
     read_schema,
 )
@@ -94,7 +95,8 @@ EVENTS = [
 ]
 FARM_EVENTS = {"e1", "e6"}
 
-# sqlite.sql as it was before studies, to check the migration against.
+# sqlite.sql as it was in 0.2 (before studies, with sire_ear_tag), to check
+# the migrations against.
 SQLITE_SCHEMA_BEFORE_STUDIES = """
 CREATE TABLE Herds (herd_id TEXT PRIMARY KEY, source_id INTEGER NOT NULL, country_code TEXT);
 CREATE TABLE AnimalEvents (
@@ -124,7 +126,7 @@ def _fill_farm(conn: sqlite3.Connection, with_study: bool) -> None:
         (HERD,),
     )
     conn.executemany(
-        "INSERT INTO Cows (animal_id, herd_id, sire_ear_tag, metadata) VALUES (?, ?, NULL, '{}')",
+        "INSERT INTO Cows (animal_id, herd_id, metadata) VALUES (?, ?, '{}')",
         [(cow, HERD) for cow in COWS],
     )
     cols = "event_id, datetime, event_type, animal_id, metadata"
@@ -355,7 +357,7 @@ def test_subset_studies_with_metadata(data):
 # --- migrating an existing database -----------------------------------------
 
 
-def test_sqlite_migration(tmp_path, sqlite_db):
+def test_sqlite_migrations(tmp_path, sqlite_db):
     db = tmp_path / "old_farm.db"
     with sqlite3.connect(db) as conn:
         conn.executescript(SQLITE_SCHEMA_BEFORE_STUDIES)
@@ -364,10 +366,13 @@ def test_sqlite_migration(tmp_path, sqlite_db):
 
     conn = sqlite3.connect(db)
     conn.executescript(read_schema(SQLITE_STUDIES_MIGRATION))
+    conn.executescript(read_schema(SQLITE_SIRE_EAR_TAG_MIGRATION))
     # A second run is refused and changes nothing.
     with pytest.raises(sqlite3.OperationalError, match="duplicate column"):
         conn.executescript(read_schema(SQLITE_STUDIES_MIGRATION))
     conn.rollback()
+    with pytest.raises(sqlite3.OperationalError, match="no such column"):
+        conn.executescript(read_schema(SQLITE_SIRE_EAR_TAG_MIGRATION))
 
     # Same tables and columns, in the same order, as a new database.
     def layout(c):
@@ -407,11 +412,15 @@ def test_sqlite_migration(tmp_path, sqlite_db):
     assert data.load_studies().height == 0
     assert data.load_study_animals().height == 0
     assert data.load_events(subset_studies=[S1]).height == 0
+    cows = data.load_cows()
+    assert cows.columns == ["animal_id", "herd_id", "metadata"]
+    assert sorted(cows["animal_id"]) == COWS
 
 
 def test_delta_migration(spark, delta_schema):
     new_tables = {"studies", "study_animals"}
-    # delta.sql without what migration 0001 adds = the tables as they were.
+    # delta.sql without what migration 0001 adds. (Migration 0002 drops a
+    # column, which plain Spark tables cannot do, so it is not tested here.)
     before = [
         re.sub(r",\s*study_id\s+STRING\b", "", stmt)
         for stmt in _spark_statements(read_schema(DELTA_SCHEMA))

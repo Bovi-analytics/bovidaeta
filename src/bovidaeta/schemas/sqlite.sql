@@ -50,7 +50,6 @@ CREATE TABLE IF NOT EXISTS AnimalEvents (
 CREATE TABLE IF NOT EXISTS Cows (
     animal_id    TEXT PRIMARY KEY,
     herd_id      TEXT NOT NULL,
-    sire_ear_tag TEXT,
     metadata     TEXT NOT NULL
 );
 

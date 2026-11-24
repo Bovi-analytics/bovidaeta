@@ -22,7 +22,7 @@
 # MAGIC Spark infers a schema from the data when none is given, and it can't
 # MAGIC infer a type for a column that is `None` in every single row - which
 # MAGIC happens here, since some source datasets never set several optional cow
-# MAGIC fields (`sire_ear_tag`, `birth_date`, `breed`, ...). That's the
+# MAGIC fields (`birth_date`, `breed`, ...). That's the
 # MAGIC `CANNOT_DETERMINE_TYPE` error; passing the target table's schema
 # MAGIC directly sidesteps inference entirely, and also means every farm's
 # MAGIC file gets read with the exact same schema and types.
@@ -83,7 +83,6 @@ COW_SCHEMA = StructType(
     [
         StructField("animal_id", StringType(), False),
         StructField("herd_id", StringType(), False),
-        StructField("sire_ear_tag", StringType(), True),
         StructField("animal_ear_tag", StringType(), True),
         StructField("animal_farm_number", LongType(), True),
         StructField("animal_legal_id", StringType(), True),
@@ -160,7 +159,6 @@ def cow_row(row: sqlite3.Row) -> dict:
     return {
         "animal_id": row["animal_id"],
         "herd_id": row["herd_id"],
-        "sire_ear_tag": row["sire_ear_tag"],
         "animal_ear_tag": meta.get("animal_ear_tag"),
         "animal_farm_number": meta.get("animal_farm_number"),
         "animal_legal_id": meta.get("animal_legal_id"),
