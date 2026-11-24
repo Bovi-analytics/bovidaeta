@@ -26,6 +26,7 @@ class EventType(str, Enum):
     - MilkRecording: Milk yield as recorded by a milk recording organization.
     - MilkMeterYields: Milk production of a single milking measured by milk meter on milk robot or in a milk parlour.
     - AggregatedMilkMeterYields: Milk meter yields summed over a period (e.g. a day or a week), for sources that only report totals.
+    - LabMeasurement: Laboratory analysis of a sample (e.g. a blood metabolite concentration).
     - FeedIntake: Feed intake of concentrates per eating session.
     - Diagnosis: Animal is sick or diagnosed with an ailment.
     - Treatment: Cow is treated.
@@ -51,6 +52,7 @@ class EventType(str, Enum):
     MILK_RECORDING = "MilkRecording"
     MILK_METER_YIELDS = "MilkMeterYields"
     AGGREGATED_MILK_METER_YIELDS = "AggregatedMilkMeterYields"
+    LAB_MEASUREMENT = "LabMeasurement"
     FEED_INTAKE = "FeedIntake"
     DIAGNOSIS = "Diagnosis"
     TREATMENT = "Treatment"
@@ -82,11 +84,41 @@ class SensorMeasurementType(str, Enum):
 
     EATING_TIME = "eating_time"
     RUMINATION_TIME = "rumination_time"
+    INACTIVE_TIME = "inactive_time"
     LYING_TIME = "lying_time"
     STANDING_TIME = "standing_time"
     WALKING_TIME = "walking_time"
     LEG_ACTIVITY = "leg_activity"
     METHANE_OUTPUT = "methane_output"
+    LYING_BOUT_COUNT = "lying_bout_count"
+    LYING_BOUT_DURATION = "lying_bout_duration"
+    STAND_UP_COUNT = "stand_up_count"
+
+
+class SensorMeasurementStatistic(str, Enum):
+    """
+    How a sensor value summarises the readings of its interval, when it is not
+    simply the total (e.g. the mean length of the lying bouts of a day).
+    """
+
+    MEAN = "mean"
+    MEDIAN = "median"
+    MINIMUM = "minimum"
+    MAXIMUM = "maximum"
+    LOWER_QUARTILE = "lower_quartile"
+    UPPER_QUARTILE = "upper_quartile"
+
+
+class CalfRemovalTiming(str, Enum):
+    """
+    When the calf is separated from its dam after calving.
+    """
+
+    IMMEDIATE = "immediate"
+    AFTER_COLOSTRUM = "after_colostrum"
+    AFTER_ONE_DAY = "after_one_day"
+    AFTER_SEVERAL_DAYS = "after_several_days"
+    OTHER = "other"
 
 
 class LamenessAffectedLeg(str, Enum):
