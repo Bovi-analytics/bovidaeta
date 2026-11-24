@@ -62,6 +62,7 @@ from .lactation import (
     load_lactations,
     select_lactations,
 )
+from .study import Study, StudyAnimal
 
 try:
     __version__ = _version("bovidaeta")
@@ -119,6 +120,8 @@ __all__ = [
     "RouteOfAdministration",
     "SensorMeasurementMetadata",
     "SensorMeasurementType",
+    "Study",
+    "StudyAnimal",
     "TreatmentMetadata",
     "TreatmentResponseStatus",
     "load_daily_milk_yields",

@@ -5,7 +5,10 @@
 # MAGIC Run `bovidaeta/schemas/delta.sql` once first to create the tables. This notebook reads
 # MAGIC every `dairy_farm_*.db` file (one per farm, see export_all_farms.py)
 # MAGIC from a folder already uploaded to the volume, and appends each farm's
-# MAGIC `Herds` / `Cows` / `AnimalEvents` rows. Events keep their raw JSON metadata,
+# MAGIC `Herds` / `Cows` / `AnimalEvents` / `Studies` / `StudyAnimals` rows (the
+# MAGIC study tables, and `AnimalEvents.study_id`, are empty for farm data).
+# MAGIC Every file must have the current schema: migrate older ones first with
+# MAGIC `bovidaeta/schemas/migrations/`. Events keep their raw JSON metadata,
 # MAGIC parsed into the `animal_events` table's VARIANT column - no per-event-type
 # MAGIC handling needed, a new event type just flows through as-is.
 # MAGIC
@@ -29,6 +32,7 @@
 
 # COMMAND ----------
 
+from datetime import date
 from pathlib import Path
 
 from pyspark.sql.functions import expr, to_timestamp
@@ -102,6 +106,30 @@ COW_SCHEMA = StructType(
     ]
 )
 
+STUDY_SCHEMA = StructType(
+    [
+        StructField("study_id", StringType(), False),
+        StructField("project", StringType(), True),
+        StructField("name", StringType(), True),
+        StructField("description", StringType(), True),
+        StructField("start_date", DateType(), True),
+        StructField("end_date", DateType(), True),
+        StructField("doi_or_protocol_url", StringType(), True),
+        StructField("open_data", BooleanType(), True),
+        StructField("license", StringType(), True),
+        StructField("credit_required", BooleanType(), True),
+        StructField("contributors", StringType(), True),
+    ]
+)
+
+STUDY_ANIMAL_SCHEMA = StructType(
+    [
+        StructField("study_id", StringType(), False),
+        StructField("animal_id", StringType(), False),
+        StructField("study_group", StringType(), True),
+    ]
+)
+
 # datetime stays a string here and is cast with to_timestamp() below, rather
 # than typed as TimestampType up front - Spark won't auto-parse a string into
 # a TimestampType column when a schema is enforced (unlike schema inference).
@@ -112,6 +140,7 @@ EVENT_SCHEMA = StructType(
         StructField("event_type", StringType(), False),
         StructField("datetime", StringType(), False),
         StructField("metadata", StringType(), True),
+        StructField("study_id", StringType(), True),
     ]
 )
 
@@ -143,6 +172,23 @@ def cow_row(row: sqlite3.Row) -> dict:
     }
 
 
+def study_row(row: sqlite3.Row) -> dict:
+    # SQLite keeps dates as ISO text and booleans as 0/1.
+    out = dict(row)
+    for key in ("start_date", "end_date"):
+        out[key] = date.fromisoformat(out[key]) if out[key] else None
+    for key in ("open_data", "credit_required"):
+        out[key] = None if out[key] is None else bool(out[key])
+    return out
+
+
+def append(rows: list[dict], schema: StructType, table: str) -> None:
+    if rows:  # Studies and StudyAnimals are empty for farm data
+        spark.createDataFrame(rows, schema=schema).write.format("delta").mode(
+            "append"
+        ).saveAsTable(f"{CATALOG_SCHEMA}.{table}")
+
+
 def load_farm(db_path: Path) -> tuple[int, int, int]:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -157,9 +203,20 @@ def load_farm(db_path: Path) -> tuple[int, int, int]:
         "append"
     ).saveAsTable(f"{CATALOG_SCHEMA}.cows")
 
+    studies = [study_row(row) for row in conn.execute("SELECT * FROM Studies")]
+    append(studies, STUDY_SCHEMA, "studies")
+    study_animals = [
+        dict(row)
+        for row in conn.execute(
+            "SELECT study_id, animal_id, study_group FROM StudyAnimals"
+        )
+    ]
+    append(study_animals, STUDY_ANIMAL_SCHEMA, "study_animals")
+
     n_events = 0
     cur = conn.execute(
-        "SELECT event_id, animal_id, event_type, datetime, metadata FROM AnimalEvents"
+        "SELECT event_id, animal_id, event_type, datetime, metadata, study_id"
+        " FROM AnimalEvents"
     )
     while True:
         batch = cur.fetchmany(BATCH_SIZE)

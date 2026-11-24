@@ -52,7 +52,7 @@ df = to_polars(per_cow)  # aggregate first; this collects
 
 ## Filtering
 
-`load_events` takes six optional filters, all combining with AND:
+`load_events` takes seven optional filters, all combining with AND:
 
 - `dts_start` / `dts_end` — restrict to a datetime range (inclusive)
 - `subset_events` — only these `EventType`s
@@ -60,9 +60,12 @@ df = to_polars(per_cow)  # aggregate first; this collects
   instead of returning the raw `metadata` blob
 - `subset_cows` — only these `animal_id`s
 - `subset_herds` — only cows in these `herd_id`s
+- `subset_studies` — only events recorded by these `study_id`s (see
+  [Studies](#studies))
 
 Every event row comes back with `event_id`, `animal_id`, `event_type`,
-`datetime`, and then either `metadata` or one column per requested key.
+`datetime`, `study_id` (null for farm data), and then either `metadata` or
+one column per requested key.
 
 **Use the filters where possible.** They can dramatically decrease the amount of data read and save a lot of waiting time. Especially the local SQLite files can quickly blow up when data is moved from SQLite into a DataFrame, so not using filters can easily create memory problems.
 
@@ -104,3 +107,33 @@ df = df.withColumn("disease_code", F.expr("disease:disease_code::STRING"))
 
 `schemas/delta.sql` also defines views (`milk_recording_v`,
 `diagnosis_v`) that have already unnested the common event types.
+
+## Studies
+
+Data from research studies can be stored next to farm data (for example
+all studies of the GEMS project in one Delta schema). Each event records
+which study it came from in `study_id`, null for farm data. Two more
+loaders, on both backends:
+
+- `load_studies(subset_studies=None)` — one row per study: project, name,
+  dates, DOI or protocol URL, and whether the data is open, its license and
+  whether contributors ask for credit.
+- `load_study_animals(subset_studies=None)` — `study_id`, `animal_id` and
+  `study_group` (e.g. the treatment arm). An animal keeps one `animal_id`
+  across studies, so an animal in several studies has a row per study.
+
+```python
+# Events recorded by two studies (farm data and other studies left out).
+df = data.load_events(subset_studies=[study_a, study_b])
+
+# The full history of one study's animals, whichever study recorded it.
+animals = data.load_study_animals(subset_studies=[study_a])
+df = data.load_events(
+    subset_cows=animals["animal_id"]
+)  # polars; on Spark collect the ids first
+```
+
+On Delta, `study_id` is a top-level column of `animal_events`, so
+`subset_studies` lets Delta skip files on its statistics. Databases created
+before studies were added need a one-time migration; see
+[`schemas/README.md`](../schemas/README.md#migrating-existing-databases).

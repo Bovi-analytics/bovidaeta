@@ -87,7 +87,7 @@ dev = ["pytest", "ruff==0.17.5"]
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-bovidaeta = ["schemas/*.sql", "py.typed"]
+bovidaeta = ["schemas/*.sql", "schemas/migrations/*.sql", "py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
