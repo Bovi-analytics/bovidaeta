@@ -206,7 +206,7 @@ class _SQLiteBackend(EventBackend):
                 )
             )
 
-        query = "SELECT animal_id, herd_id, sire_ear_tag, metadata FROM Cows"
+        query = "SELECT animal_id, herd_id, metadata FROM Cows"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         return self._query(query, params)

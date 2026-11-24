@@ -36,11 +36,13 @@ columns.
 | Migration | Adds                                                                                     |
 | --------- | ---------------------------------------------------------------------------------------- |
 | `0001_studies` | `Studies` / `StudyAnimals` tables and `AnimalEvents.study_id` (Delta: `studies`, `study_animals`, `animal_events.study_id`) |
+| `0002_drop_sire_ear_tag` | removes `Cows.sire_ear_tag` (Delta: `cows.sire_ear_tag`), which was never filled in |
 
-Existing rows get a null `study_id`, which is what farm data has, so a
-migrated database loads exactly as before, with an extra (null) `study_id`
-column. A database is already migrated when it has the column; running the
-migration a second time fails on the `ALTER TABLE` and changes nothing.
+After `0001`, existing rows have a null `study_id`, which is what farm data
+has, so a migrated database loads exactly as before, with an extra (null)
+`study_id` column. After `0002`, `load_cows()` no longer returns
+`sire_ear_tag`. Each migration's `ALTER TABLE` fails when it has already been
+applied, and changes nothing then.
 
 ### SQLite
 
@@ -48,24 +50,38 @@ From a shell, with the `sqlite3` CLI:
 
 ```bash
 sqlite3 dairy_farm.db < src/bovidaeta/schemas/migrations/0001_studies.sqlite.sql
+sqlite3 dairy_farm.db < src/bovidaeta/schemas/migrations/0002_drop_sire_ear_tag.sqlite.sql
 ```
+
+`0002` needs SQLite 3.35 or newer (`sqlite3 --version`) for `DROP COLUMN`.
 
 Or from Python, using the copy that ships with the package:
 
 ```python
 import sqlite3
 
-from bovidaeta.schemas import SQLITE_STUDIES_MIGRATION, read_schema
+from bovidaeta.schemas import (
+    SQLITE_SIRE_EAR_TAG_MIGRATION,
+    SQLITE_STUDIES_MIGRATION,
+    read_schema,
+)
+
+
+def columns(conn, table):
+    return {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+
 
 with sqlite3.connect("dairy_farm.db") as conn:
-    columns = {row[1] for row in conn.execute("PRAGMA table_info(AnimalEvents)")}
-    if "study_id" not in columns:
+    if "study_id" not in columns(conn, "AnimalEvents"):
         conn.executescript(read_schema(SQLITE_STUDIES_MIGRATION))
+    if "sire_ear_tag" in columns(conn, "Cows"):
+        conn.executescript(read_schema(SQLITE_SIRE_EAR_TAG_MIGRATION))
 ```
 
 The SQL, for reference:
 
 ```sql
+-- 0001
 ALTER TABLE AnimalEvents ADD COLUMN study_id TEXT;
 CREATE TABLE IF NOT EXISTS Studies (
     study_id TEXT PRIMARY KEY, project TEXT, name TEXT, description TEXT,
@@ -77,22 +93,31 @@ CREATE TABLE IF NOT EXISTS StudyAnimals (
     study_id TEXT NOT NULL, animal_id TEXT NOT NULL, study_group TEXT,
     PRIMARY KEY (study_id, animal_id)
 );
+
+-- 0002
+ALTER TABLE Cows DROP COLUMN sire_ear_tag;
 ```
 
 ### Delta
 
-Set the catalog and schema at the top of
-[`migrations/0001_studies.delta.sql`](migrations/0001_studies.delta.sql),
-then run it in a Databricks SQL editor. Adding a column is a metadata-only
-change; no data files are rewritten.
+Set the catalog and schema at the top of each file in
+[`migrations/`](migrations), then run them in order in a Databricks SQL
+editor. Adding and dropping columns are metadata-only changes; no data files
+are rewritten.
 
 ```sql
 USE CATALOG bovidaeta;
 USE SCHEMA farms;
 
+-- 0001
 ALTER TABLE animal_events ADD COLUMN study_id STRING;
 -- then the CREATE TABLE statements for `studies` and `study_animals`,
 -- as in delta.sql
+
+-- 0002: Delta only drops columns with column mapping on, which upgrades
+-- the table's protocol (reader 2 / writer 5; DBR 10.4+ reads it).
+ALTER TABLE cows SET TBLPROPERTIES ('delta.columnMapping.mode' = 'name');
+ALTER TABLE cows DROP COLUMN sire_ear_tag;
 ```
 
 ## Changing a schema
