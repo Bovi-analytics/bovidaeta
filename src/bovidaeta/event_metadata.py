@@ -762,6 +762,7 @@ class TreatmentMetadata(EventMetadataModel):
         description="Additional free-text notes on the treatment.",
     )
 
+
 class WeaningMetadata(EventMetadataModel):
     """Metadata for weaning a calf in a dam-raising herd."""
 
@@ -775,6 +776,7 @@ class WeaningMetadata(EventMetadataModel):
         gt=0,
         description="Duration of partial weaning in days, when known.",
     )
+
 
 __all__ = [
     "AggregatedMilkMeterYieldsMetadata",
