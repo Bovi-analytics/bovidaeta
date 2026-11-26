@@ -7,7 +7,9 @@ from bovidaeta.event_metadata import (
 
 
 def test_lab_measurement_metadata():
-    meta = LabMeasurementMetadata(analyte="calcium", value=2.3, unit="mmol/L", sample_type="blood_serum")
+    meta = LabMeasurementMetadata(
+        analyte="calcium", value=2.3, unit="mmol/L", sample_type="blood_serum"
+    )
     assert meta.sample_type == "blood_serum"
     assert EventType.LAB_MEASUREMENT.value == "LabMeasurement"
 
@@ -19,7 +21,10 @@ def test_calving_metadata_extensions():
 
 def test_sensor_statistic_and_new_types():
     meta = SensorMeasurementMetadata(
-        sensor_measurement_type="lying_bout_duration", value=60.0, unit="min", statistic="median"
+        sensor_measurement_type="lying_bout_duration",
+        value=60.0,
+        unit="min",
+        statistic="median",
     )
     assert meta.statistic == "median"
     SensorMeasurementMetadata(sensor_measurement_type="inactive_time", value=10.0)
