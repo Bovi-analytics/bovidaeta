@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .enums import (
     AggregationPeriod,
     BreedingType,
+    CalfRemovalTiming,
     CalvingEaseType,
     ConfirmationStatus,
     DepartureReason,
@@ -32,6 +33,7 @@ from .enums import (
     LamenessObservationContext,
     ParturitionBirthStatusType,
     RouteOfAdministration,
+    SensorMeasurementStatistic,
     SensorMeasurementType,
     TreatmentResponseStatus,
 )
@@ -212,6 +214,15 @@ class CalvingMetadata(EventMetadataModel):
     parturition_birth_status_type: ParturitionBirthStatusType | None = Field(
         default=None,
         description="The way a calf was born, based on ICAR enum.",
+    )
+    calving_duration_hours: float | None = Field(
+        default=None,
+        ge=0,
+        description="Duration of the calving process in hours.",
+    )
+    calf_removal: CalfRemovalTiming | None = Field(
+        default=None,
+        description="When the calf was separated from the dam.",
     )
 
 
@@ -623,6 +634,10 @@ class SensorMeasurementMetadata(EventMetadataModel):
         default=None,
         description="Optional unit of measurement, e.g., 'min', 'steps'.",
     )
+    statistic: SensorMeasurementStatistic | None = Field(
+        default=None,
+        description="How `value` summarises the interval; empty when it is the total or a single reading.",
+    )
     start_time: datetime | None = Field(
         default=None,
         description="Start of measurement interval (if applicable).",
@@ -630,6 +645,25 @@ class SensorMeasurementMetadata(EventMetadataModel):
     end_time: datetime | None = Field(
         default=None,
         description="End of measurement interval (if applicable).",
+    )
+
+
+class LabMeasurementMetadata(EventMetadataModel):
+    """Laboratory measurement event metadata."""
+
+    analyte: str = Field(
+        description="Substance measured, e.g., 'calcium' or 'beta_hydroxybutyrate'.",
+    )
+    value: float = Field(
+        description="Measured concentration or level.",
+    )
+    unit: str | None = Field(
+        default=None,
+        description="Unit of `value`, e.g., 'mmol/L'.",
+    )
+    sample_type: DiagnosisSampleType | None = Field(
+        default=None,
+        description="Type of sample that was analysed.",
     )
 
 
@@ -779,6 +813,7 @@ __all__ = [
     "GenomeTestMetadata",
     "HerdEntryMetadata",
     "HerdMoveMetadata",
+    "LabMeasurementMetadata",
     "LamenessScoreMetadata",
     "MilkMeterYieldsMetadata",
     "MilkRecordingMetadata",
