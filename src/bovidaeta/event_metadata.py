@@ -762,6 +762,19 @@ class TreatmentMetadata(EventMetadataModel):
         description="Additional free-text notes on the treatment.",
     )
 
+class WeaningMetadata(EventMetadataModel):
+    """Metadata for weaning a calf in a dam-raising herd."""
+
+    partial_wean: bool = Field(
+        default=False,
+        description="Whether weaning took place over multiple days.",
+    )
+
+    weaning_period_length: float | None = Field(
+        default=None,
+        gt=0,
+        description="Duration of partial weaning in days, when known.",
+    )
 
 __all__ = [
     "AggregatedMilkMeterYieldsMetadata",
@@ -784,6 +797,7 @@ __all__ = [
     "MilkRecordingMetadata",
     "SensorMeasurementMetadata",
     "TreatmentMetadata",
+    "WeaningMetadata",
 ]
 
 ALL_METADATA = [globals()[name] for name in __all__]
