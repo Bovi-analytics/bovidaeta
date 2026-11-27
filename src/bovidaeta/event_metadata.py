@@ -299,6 +299,20 @@ class MilkRecordingMetadata(EventMetadataModel):
         ge=0,
         description="Total daily milk yield in kilograms (or liters).",
     )
+    lactation_number: int | None = Field(
+        default=None,
+        ge=1,
+        description="Number of the lactation (1 = first lactation) the recording belongs to.",
+    )
+    days_in_milk: int | None = Field(
+        default=None,
+        ge=0,
+        description="Days since calving at the time of the recording.",
+    )
+    production_group: str | None = Field(
+        default=None,
+        description="Label of the management or production group the animal was in at the recording.",
+    )
 
 
 class MilkMeterYieldsMetadata(EventMetadataModel):
